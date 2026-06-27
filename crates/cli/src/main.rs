@@ -15,6 +15,8 @@ use host_reference_calendar::CalendarNormalizer;
 use host_reference_columnar::ColumnarNormalizer;
 #[cfg(feature = "config")]
 use host_reference_config::ConfigNormalizer;
+#[cfg(feature = "epub")]
+use host_reference_epub::EpubNormalizer;
 #[cfg(feature = "data")]
 use host_reference_data::DataNormalizer;
 #[cfg(feature = "html")]
@@ -57,6 +59,8 @@ fn registry() -> Vec<Box<dyn Normalizer>> {
     reg.push(Box::new(AsciidocNormalizer));
     #[cfg(feature = "rtf")]
     reg.push(Box::new(RtfNormalizer));
+    #[cfg(feature = "epub")]
+    reg.push(Box::new(EpubNormalizer));
     #[cfg(feature = "html")]
     reg.push(Box::new(HtmlNormalizer));
     #[cfg(feature = "vector")]
