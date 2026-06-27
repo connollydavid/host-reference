@@ -1,0 +1,11 @@
+== markdown ==
+properties: 5 keys
+- app.name
+- app.version
+- db.url
+- db.user
+- log.level
+== source-map ==
+2dbde52b3d3f:0-109
+== tokens ==
+raw=34 normalised=26
