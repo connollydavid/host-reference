@@ -1,9 +1,12 @@
-//! The structured-data normaliser: JSON, YAML, CSV, and generic XML (RSS, Atom, plain XML). JSON
-//! and YAML parse to a value whose shape (keys and types, sorted) is the skeleton; CSV is tabular,
-//! so its skeleton is the columns and row count; XML walks the element tree into a tag outline,
-//! collapsing repeated siblings into a count. The full content round-trips. The source map is
-//! whole-document for now; a span-preserving parser would map each key, row, or element, which is
-//! future work. HTML5 is not well-formed XML and lands in the prose family with a markdown target.
+//! The structured-data normaliser: JSON, TOML, YAML, CSV, TSV, generic XML (RSS, Atom, plain XML),
+//! JSON Lines, and the Jupyter notebook. JSON and TOML and YAML parse to a value whose shape (keys
+//! and types, sorted) is the skeleton; CSV and TSV give the columns and row count; XML walks the
+//! element tree,
+//! collapsing repeated siblings into a count; JSON Lines reports the record count with the first
+//! record's shape; the notebook reports its cell tally with a one-line preview per cell. The full
+//! content round-trips. The source map is whole-document for now; a span-preserving parser would map
+//! each key, row, or element, which is future work. HTML5 is not well-formed XML and lands in the
+//! prose family with a markdown target.
 
 use host_reference_core::{
     content_id, count_tokens, Caps, Edit, Error, Modality, Normalizer, Patch, Semantic, Source,
@@ -33,7 +36,10 @@ impl Normalizer for DataNormalizer {
     fn detect(&self, source: &Source) -> bool {
         matches!(
             source.hint,
-            Some("json" | "yaml" | "yml" | "csv" | "xml" | "rss" | "atom")
+            Some(
+                "json" | "toml" | "yaml" | "yml" | "csv" | "tsv" | "tab" | "xml" | "rss" | "atom"
+                    | "ndjson" | "jsonl" | "ipynb"
+            )
         )
     }
 
@@ -41,9 +47,13 @@ impl Normalizer for DataNormalizer {
         let text = self.text(source)?;
         let id = content_id(source.bytes);
         let outline = match source.hint {
-            Some("csv") => csv_shape(text)?,
+            Some("csv") => delimited_shape(text, b',')?,
+            Some("tsv" | "tab") => delimited_shape(text, b'\t')?,
             Some("yaml" | "yml") => yaml_shape(text)?,
             Some("xml" | "rss" | "atom") => xml_shape(text)?,
+            Some("ndjson" | "jsonl") => ndjson_shape(text)?,
+            Some("ipynb") => ipynb_shape(text)?,
+            Some("toml") => toml_shape(text)?,
             _ => json_shape(text)?,
         };
         Ok(Tier0 {
@@ -122,6 +132,12 @@ fn yaml_shape(text: &str) -> Result<String, Error> {
     Ok(value_shape(&v))
 }
 
+fn toml_shape(text: &str) -> Result<String, Error> {
+    let tv: toml::Value = toml::from_str(text).map_err(|e| Error::Parse(format!("toml: {e}")))?;
+    let v: Value = serde_json::to_value(tv).map_err(|e| Error::Parse(format!("toml: {e}")))?;
+    Ok(value_shape(&v))
+}
+
 /// The shape of a value: object keys with their types (sorted), array length with its element
 /// type, or a scalar type. Nested objects and object-valued array elements recurse.
 fn shape(v: &Value, depth: usize, out: &mut String) {
@@ -163,17 +179,18 @@ fn field(key: &str, val: &Value, depth: usize, out: &mut String) {
     }
 }
 
-fn csv_shape(text: &str) -> Result<String, Error> {
+fn delimited_shape(text: &str, delim: u8) -> Result<String, Error> {
     let mut rdr = csv::ReaderBuilder::new()
         .has_headers(true)
+        .delimiter(delim)
         .from_reader(text.as_bytes());
     let headers = rdr
         .headers()
-        .map_err(|e| Error::Parse(format!("csv: {e}")))?
+        .map_err(|e| Error::Parse(format!("delimited: {e}")))?
         .clone();
     let mut rows = 0usize;
     for rec in rdr.records() {
-        rec.map_err(|e| Error::Parse(format!("csv: {e}")))?;
+        rec.map_err(|e| Error::Parse(format!("delimited: {e}")))?;
         rows += 1;
     }
     let mut out = format!("table: {rows} rows, {} columns\n", headers.len());
@@ -181,6 +198,74 @@ fn csv_shape(text: &str) -> Result<String, Error> {
         out.push_str(&format!("- {h}\n"));
     }
     Ok(out)
+}
+
+/// JSON Lines: each non-empty line is a JSON value. The skeleton is the record count and the shape
+/// of the first record, which a homogeneous stream shares.
+fn ndjson_shape(text: &str) -> Result<String, Error> {
+    let mut count = 0usize;
+    let mut first: Option<Value> = None;
+    for line in text.lines() {
+        if line.trim().is_empty() {
+            continue;
+        }
+        let v: Value =
+            serde_json::from_str(line).map_err(|e| Error::Parse(format!("ndjson: {e}")))?;
+        if first.is_none() {
+            first = Some(v);
+        }
+        count += 1;
+    }
+    let mut out = format!("ndjson: {count} records\n");
+    if let Some(v) = first {
+        out.push_str("first record:\n");
+        out.push_str(&value_shape(&v));
+    }
+    Ok(out)
+}
+
+/// A Jupyter notebook: a JSON document whose `cells` array carries the content. The skeleton is the
+/// cell tally and a one-line preview of each cell, which keeps a long notebook token-lean.
+fn ipynb_shape(text: &str) -> Result<String, Error> {
+    let nb: Value = serde_json::from_str(text).map_err(|e| Error::Parse(format!("ipynb: {e}")))?;
+    let cells = nb
+        .get("cells")
+        .and_then(|c| c.as_array())
+        .ok_or_else(|| Error::Parse("ipynb: no cells array".into()))?;
+    let (mut code, mut markdown, mut other) = (0usize, 0usize, 0usize);
+    let mut lines = String::new();
+    for cell in cells {
+        let ct = cell.get("cell_type").and_then(|t| t.as_str()).unwrap_or("unknown");
+        match ct {
+            "code" => code += 1,
+            "markdown" => markdown += 1,
+            _ => other += 1,
+        }
+        lines.push_str(&format!("- [{ct}] {}\n", cell_first_line(cell)));
+    }
+    let mut out = format!("notebook: {} cells ({code} code, {markdown} markdown", cells.len());
+    if other > 0 {
+        out.push_str(&format!(", {other} other"));
+    }
+    out.push_str(")\n");
+    out.push_str(&lines);
+    Ok(out)
+}
+
+/// The first non-empty source line of a cell, the `source` being a string or an array of line
+/// strings.
+fn cell_first_line(cell: &Value) -> String {
+    let joined: String = match cell.get("source") {
+        Some(Value::String(s)) => s.clone(),
+        Some(Value::Array(arr)) => arr.iter().filter_map(|v| v.as_str()).collect(),
+        _ => String::new(),
+    };
+    joined
+        .lines()
+        .map(str::trim)
+        .find(|l| !l.is_empty())
+        .unwrap_or("")
+        .to_string()
 }
 
 fn xml_shape(text: &str) -> Result<String, Error> {

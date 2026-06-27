@@ -45,3 +45,23 @@ fn yaml_config_shape() {
 fn xml_rss_feed_shape() {
     check("feed", "input.xml", "xml");
 }
+
+#[test]
+fn ndjson_stream_shape() {
+    check("stream", "input.ndjson", "ndjson");
+}
+
+#[test]
+fn tsv_grid_shape() {
+    check("grid", "input.tsv", "tsv");
+}
+
+#[test]
+fn ipynb_notebook_shape() {
+    check("notebook", "input.ipynb", "ipynb");
+}
+
+#[test]
+fn toml_manifest_shape() {
+    check("manifest", "input.toml", "toml");
+}

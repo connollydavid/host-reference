@@ -1,0 +1,10 @@
+== markdown ==
+ndjson: 3 records
+first record:
+- event: string
+- ok: bool
+- ts: number
+== source-map ==
+fcce1e9284b3:0-118
+== tokens ==
+raw=51 normalised=25

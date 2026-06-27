@@ -1,0 +1,15 @@
+== markdown ==
+- dependencies: object
+  - anyhow: string
+  - serde: string
+- features: object
+  - default: array[1] of string
+  - std: array[0] of empty
+- package: object
+  - edition: string
+  - name: string
+  - version: string
+== source-map ==
+d6c6f4cf2243:0-142
+== tokens ==
+raw=48 normalised=67
