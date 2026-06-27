@@ -5,6 +5,8 @@
 use std::process::ExitCode;
 
 use host_reference_core::{serialize_tier0, Error, Normalizer, Source, SpanSelector};
+#[cfg(feature = "asciidoc")]
+use host_reference_asciidoc::AsciidocNormalizer;
 #[cfg(feature = "bibtex")]
 use host_reference_bibtex::BibtexNormalizer;
 #[cfg(feature = "calendar")]
@@ -49,6 +51,8 @@ fn registry() -> Vec<Box<dyn Normalizer>> {
     reg.push(Box::new(RstNormalizer));
     #[cfg(feature = "org")]
     reg.push(Box::new(OrgNormalizer));
+    #[cfg(feature = "asciidoc")]
+    reg.push(Box::new(AsciidocNormalizer));
     #[cfg(feature = "html")]
     reg.push(Box::new(HtmlNormalizer));
     #[cfg(feature = "vector")]

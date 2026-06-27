@@ -1,0 +1,12 @@
+[package]
+name = "host-reference-asciidoc"
+description = "host-reference AsciiDoc normaliser: section outline"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+host-reference-core = { path = "../core" }
+asciidork-parser = "0.38"
+asciidork-ast = "0.38"
+bumpalo = "3"
