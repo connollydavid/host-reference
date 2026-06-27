@@ -1,7 +1,9 @@
-//! The structured-data normaliser: JSON and CSV. JSON parses to a value and the skeleton is its
-//! shape (keys and types, sorted for determinism); CSV is tabular and the skeleton is its columns
-//! and row count. The full content round-trips. The source map is whole-document for now; a
-//! span-preserving parser would map each key or row, which is future work.
+//! The structured-data normaliser: JSON, YAML, CSV, and generic XML (RSS, Atom, plain XML). JSON
+//! and YAML parse to a value whose shape (keys and types, sorted) is the skeleton; CSV is tabular,
+//! so its skeleton is the columns and row count; XML walks the element tree into a tag outline,
+//! collapsing repeated siblings into a count. The full content round-trips. The source map is
+//! whole-document for now; a span-preserving parser would map each key, row, or element, which is
+//! future work. HTML5 is not well-formed XML and lands in the prose family with a markdown target.
 
 use host_reference_core::{
     content_id, count_tokens, Caps, Edit, Error, Modality, Normalizer, Patch, Semantic, Source,
@@ -29,7 +31,10 @@ impl Normalizer for DataNormalizer {
     }
 
     fn detect(&self, source: &Source) -> bool {
-        matches!(source.hint, Some("json" | "csv"))
+        matches!(
+            source.hint,
+            Some("json" | "yaml" | "yml" | "csv" | "xml" | "rss" | "atom")
+        )
     }
 
     fn skeleton(&self, source: &Source) -> Result<Tier0, Error> {
@@ -37,6 +42,8 @@ impl Normalizer for DataNormalizer {
         let id = content_id(source.bytes);
         let outline = match source.hint {
             Some("csv") => csv_shape(text)?,
+            Some("yaml" | "yml") => yaml_shape(text)?,
+            Some("xml" | "rss" | "atom") => xml_shape(text)?,
             _ => json_shape(text)?,
         };
         Ok(Tier0 {
@@ -99,11 +106,20 @@ fn type_name(v: &Value) -> &'static str {
     }
 }
 
+fn value_shape(v: &Value) -> String {
+    let mut out = String::new();
+    shape(v, 0, &mut out);
+    out
+}
+
 fn json_shape(text: &str) -> Result<String, Error> {
     let v: Value = serde_json::from_str(text).map_err(|e| Error::Parse(format!("json: {e}")))?;
-    let mut out = String::new();
-    shape(&v, 0, &mut out);
-    Ok(out)
+    Ok(value_shape(&v))
+}
+
+fn yaml_shape(text: &str) -> Result<String, Error> {
+    let v: Value = serde_norway::from_str(text).map_err(|e| Error::Parse(format!("yaml: {e}")))?;
+    Ok(value_shape(&v))
 }
 
 /// The shape of a value: object keys with their types (sorted), array length with its element
@@ -165,4 +181,33 @@ fn csv_shape(text: &str) -> Result<String, Error> {
         out.push_str(&format!("- {h}\n"));
     }
     Ok(out)
+}
+
+fn xml_shape(text: &str) -> Result<String, Error> {
+    let doc = roxmltree::Document::parse(text).map_err(|e| Error::Parse(format!("xml: {e}")))?;
+    let mut out = String::new();
+    emit_element(doc.root_element().tag_name().name(), 1, doc.root_element(), 0, &mut out);
+    Ok(out)
+}
+
+/// One element of the XML tree: its tag (with a count when a sibling tag repeats), then each
+/// distinct child tag once in first-seen order, recursing into the first occurrence of each.
+fn emit_element(name: &str, count: usize, node: roxmltree::Node, depth: usize, out: &mut String) {
+    let indent = "  ".repeat(depth);
+    if count > 1 {
+        out.push_str(&format!("{indent}- {name} (x{count})\n"));
+    } else {
+        out.push_str(&format!("{indent}- {name}\n"));
+    }
+    let mut groups: Vec<(&str, usize, roxmltree::Node)> = Vec::new();
+    for child in node.children().filter(|n| n.is_element()) {
+        let cn = child.tag_name().name();
+        match groups.iter_mut().find(|(n, _, _)| *n == cn) {
+            Some(g) => g.1 += 1,
+            None => groups.push((cn, 1, child)),
+        }
+    }
+    for (cn, c, first) in groups {
+        emit_element(cn, c, first, depth + 1, out);
+    }
 }

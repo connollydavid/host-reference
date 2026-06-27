@@ -1,0 +1,9 @@
+name: widget
+count: 3
+active: true
+tags:
+  - alpha
+  - beta
+meta:
+  owner: team-x
+  revision: 7

@@ -1,0 +1,14 @@
+== markdown ==
+- rss
+  - channel
+    - title
+    - link
+    - description
+    - item (x2)
+      - title
+      - link
+      - pubDate
+== source-map ==
+bd2f2a542872:0-538
+== tokens ==
+raw=177 normalised=39

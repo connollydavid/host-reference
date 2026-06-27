@@ -35,3 +35,13 @@ fn json_object_shape() {
 fn csv_table_shape() {
     check("table", "input.csv", "csv");
 }
+
+#[test]
+fn yaml_config_shape() {
+    check("config", "input.yaml", "yaml");
+}
+
+#[test]
+fn xml_rss_feed_shape() {
+    check("feed", "input.xml", "xml");
+}
