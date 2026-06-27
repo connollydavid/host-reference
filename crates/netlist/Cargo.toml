@@ -1,0 +1,9 @@
+[package]
+name = "host-reference-netlist"
+description = "host-reference netlist normaliser: SPICE to a connectivity summary"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+host-reference-core = { path = "../core" }

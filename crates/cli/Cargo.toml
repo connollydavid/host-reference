@@ -15,3 +15,4 @@ host-reference-prose = { path = "../prose" }
 host-reference-data = { path = "../data" }
 host-reference-html = { path = "../html" }
 host-reference-vector = { path = "../vector" }
+host-reference-netlist = { path = "../netlist" }

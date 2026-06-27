@@ -162,6 +162,7 @@ dependencies = [
  "host-reference-core",
  "host-reference-data",
  "host-reference-html",
+ "host-reference-netlist",
  "host-reference-prose",
  "host-reference-vector",
 ]
@@ -191,6 +192,13 @@ version = "0.1.0"
 dependencies = [
  "host-reference-core",
  "htmd",
+]
+
+[[package]]
+name = "host-reference-netlist"
+version = "0.1.0"
+dependencies = [
+ "host-reference-core",
 ]
 
 [[package]]
