@@ -27,6 +27,8 @@ use host_reference_prose::ProseNormalizer;
 use host_reference_org::OrgNormalizer;
 #[cfg(feature = "rst")]
 use host_reference_rst::RstNormalizer;
+#[cfg(feature = "rtf")]
+use host_reference_rtf::RtfNormalizer;
 #[cfg(feature = "vector")]
 use host_reference_vector::SvgNormalizer;
 
@@ -53,6 +55,8 @@ fn registry() -> Vec<Box<dyn Normalizer>> {
     reg.push(Box::new(OrgNormalizer));
     #[cfg(feature = "asciidoc")]
     reg.push(Box::new(AsciidocNormalizer));
+    #[cfg(feature = "rtf")]
+    reg.push(Box::new(RtfNormalizer));
     #[cfg(feature = "html")]
     reg.push(Box::new(HtmlNormalizer));
     #[cfg(feature = "vector")]

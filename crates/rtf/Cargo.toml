@@ -1,0 +1,10 @@
+[package]
+name = "host-reference-rtf"
+description = "host-reference RTF normaliser: de-styled text preview"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+host-reference-core = { path = "../core" }
+rtf-parser = "0.4"
