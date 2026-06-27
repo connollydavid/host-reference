@@ -1,0 +1,11 @@
+[package]
+name = "host-reference-data"
+description = "host-reference structured-data normaliser: JSON and CSV"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+host-reference-core = { path = "../core" }
+serde_json = "1"
+csv = "1"

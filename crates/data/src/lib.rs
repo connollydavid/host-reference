@@ -1,0 +1,168 @@
+//! The structured-data normaliser: JSON and CSV. JSON parses to a value and the skeleton is its
+//! shape (keys and types, sorted for determinism); CSV is tabular and the skeleton is its columns
+//! and row count. The full content round-trips. The source map is whole-document for now; a
+//! span-preserving parser would map each key or row, which is future work.
+
+use host_reference_core::{
+    content_id, count_tokens, Caps, Edit, Error, Modality, Normalizer, Patch, Semantic, Source,
+    SourceMap, Span, SpanSelector, Tier0, Tier1,
+};
+use serde_json::Value;
+
+pub struct DataNormalizer;
+
+impl DataNormalizer {
+    fn text<'a>(&self, source: &Source<'a>) -> Result<&'a str, Error> {
+        std::str::from_utf8(source.bytes).map_err(|e| Error::Parse(format!("not UTF-8: {e}")))
+    }
+}
+
+impl Normalizer for DataNormalizer {
+    fn modality(&self) -> Modality {
+        Modality::StructuredData
+    }
+
+    fn capabilities(&self) -> Caps {
+        // Structured data carries its full semantic shape; the full content round-trips; it is
+        // editable; no recognition is involved.
+        Caps { round_trip: true, write_back: true, semantic: Semantic::Full, ocr: false }
+    }
+
+    fn detect(&self, source: &Source) -> bool {
+        matches!(source.hint, Some("json" | "csv"))
+    }
+
+    fn skeleton(&self, source: &Source) -> Result<Tier0, Error> {
+        let text = self.text(source)?;
+        let id = content_id(source.bytes);
+        let outline = match source.hint {
+            Some("csv") => csv_shape(text)?,
+            _ => json_shape(text)?,
+        };
+        Ok(Tier0 {
+            raw_tokens: count_tokens(text),
+            normalised_tokens: count_tokens(&outline),
+            markdown: outline,
+            source_map: SourceMap {
+                spans: vec![Span { source: id, origin: 0..source.bytes.len() }],
+            },
+        })
+    }
+
+    fn view(&self, source: &Source, select: &SpanSelector) -> Result<Tier1, Error> {
+        let text = self.text(source)?;
+        let id = content_id(source.bytes);
+        let (start, end) = match select {
+            SpanSelector::CharOffset { start, len } => {
+                let s = floor_boundary(text, *start);
+                (s, floor_boundary(text, s + *len))
+            }
+            // Other selectors return the whole document until a span-preserving parser lands.
+            _ => (0, text.len()),
+        };
+        Ok(Tier1 {
+            markdown: text[start..end].to_string(),
+            source_map: SourceMap { spans: vec![Span { source: id, origin: start..end }] },
+        })
+    }
+
+    fn put(&self, source: &Source, edit: &Edit) -> Result<Patch, Error> {
+        let text = self.text(source)?;
+        let start = floor_boundary(text, edit.at.origin.start);
+        let end = floor_boundary(text, edit.at.origin.end.max(start));
+        let mut out = String::with_capacity(text.len());
+        out.push_str(&text[..start]);
+        out.push_str(&edit.replacement);
+        out.push_str(&text[end..]);
+        Ok(Patch { bytes: out.into_bytes() })
+    }
+}
+
+fn floor_boundary(text: &str, mut i: usize) -> usize {
+    if i > text.len() {
+        i = text.len();
+    }
+    while !text.is_char_boundary(i) {
+        i -= 1;
+    }
+    i
+}
+
+fn type_name(v: &Value) -> &'static str {
+    match v {
+        Value::Null => "null",
+        Value::Bool(_) => "bool",
+        Value::Number(_) => "number",
+        Value::String(_) => "string",
+        Value::Array(_) => "array",
+        Value::Object(_) => "object",
+    }
+}
+
+fn json_shape(text: &str) -> Result<String, Error> {
+    let v: Value = serde_json::from_str(text).map_err(|e| Error::Parse(format!("json: {e}")))?;
+    let mut out = String::new();
+    shape(&v, 0, &mut out);
+    Ok(out)
+}
+
+/// The shape of a value: object keys with their types (sorted), array length with its element
+/// type, or a scalar type. Nested objects and object-valued array elements recurse.
+fn shape(v: &Value, depth: usize, out: &mut String) {
+    let indent = "  ".repeat(depth);
+    match v {
+        Value::Object(map) => {
+            let mut keys: Vec<&String> = map.keys().collect();
+            keys.sort();
+            for k in keys {
+                field(k, &map[k], depth, out);
+            }
+        }
+        Value::Array(arr) => {
+            let et = arr.first().map(type_name).unwrap_or("empty");
+            out.push_str(&format!("{indent}- [array of {} {et}]\n", arr.len()));
+            if let Some(first @ Value::Object(_)) = arr.first() {
+                shape(first, depth + 1, out);
+            }
+        }
+        scalar => out.push_str(&format!("{indent}- {}\n", type_name(scalar))),
+    }
+}
+
+fn field(key: &str, val: &Value, depth: usize, out: &mut String) {
+    let indent = "  ".repeat(depth);
+    match val {
+        Value::Array(arr) => {
+            let et = arr.first().map(type_name).unwrap_or("empty");
+            out.push_str(&format!("{indent}- {key}: array[{}] of {et}\n", arr.len()));
+            if let Some(first @ Value::Object(_)) = arr.first() {
+                shape(first, depth + 1, out);
+            }
+        }
+        Value::Object(_) => {
+            out.push_str(&format!("{indent}- {key}: object\n"));
+            shape(val, depth + 1, out);
+        }
+        _ => out.push_str(&format!("{indent}- {key}: {}\n", type_name(val))),
+    }
+}
+
+fn csv_shape(text: &str) -> Result<String, Error> {
+    let mut rdr = csv::ReaderBuilder::new()
+        .has_headers(true)
+        .from_reader(text.as_bytes());
+    let headers = rdr
+        .headers()
+        .map_err(|e| Error::Parse(format!("csv: {e}")))?
+        .clone();
+    let mut rows = 0usize;
+    for rec in rdr.records() {
+        rec.map_err(|e| Error::Parse(format!("csv: {e}")))?;
+        rows += 1;
+    }
+    let mut out = format!("table: {rows} rows, {} columns\n", headers.len());
+    for h in headers.iter() {
+        out.push_str(&format!("- {h}\n"));
+    }
+    Ok(out)
+}

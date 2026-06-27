@@ -5,10 +5,11 @@
 use std::process::ExitCode;
 
 use host_reference_core::{serialize_tier0, Error, Normalizer, Source, SpanSelector};
+use host_reference_data::DataNormalizer;
 use host_reference_prose::ProseNormalizer;
 
 fn registry() -> Vec<Box<dyn Normalizer>> {
-    vec![Box::new(ProseNormalizer)]
+    vec![Box::new(ProseNormalizer), Box::new(DataNormalizer)]
 }
 
 fn usage() {

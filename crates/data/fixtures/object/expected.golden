@@ -1,0 +1,12 @@
+== markdown ==
+- active: bool
+- count: number
+- meta: object
+  - owner: string
+  - revision: number
+- name: string
+- tags: array[2] of string
+== source-map ==
+db7bf2992638:0-142
+== tokens ==
+raw=54 normalised=42
