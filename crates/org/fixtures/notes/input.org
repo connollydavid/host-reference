@@ -1,0 +1,9 @@
+* Project Notes
+Some introduction text.
+** Setup
+How to set up the project.
+** Tasks
+*** Done
+*** Pending
+* Appendix
+Extra notes at the end.

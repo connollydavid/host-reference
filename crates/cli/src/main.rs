@@ -21,6 +21,8 @@ use host_reference_html::HtmlNormalizer;
 use host_reference_netlist::SpiceNormalizer;
 #[cfg(feature = "prose")]
 use host_reference_prose::ProseNormalizer;
+#[cfg(feature = "org")]
+use host_reference_org::OrgNormalizer;
 #[cfg(feature = "rst")]
 use host_reference_rst::RstNormalizer;
 #[cfg(feature = "vector")]
@@ -45,6 +47,8 @@ fn registry() -> Vec<Box<dyn Normalizer>> {
     reg.push(Box::new(BibtexNormalizer));
     #[cfg(feature = "rst")]
     reg.push(Box::new(RstNormalizer));
+    #[cfg(feature = "org")]
+    reg.push(Box::new(OrgNormalizer));
     #[cfg(feature = "html")]
     reg.push(Box::new(HtmlNormalizer));
     #[cfg(feature = "vector")]

@@ -21,6 +21,7 @@ host-reference-calendar = { path = "../calendar", optional = true }
 host-reference-columnar = { path = "../columnar", optional = true }
 host-reference-bibtex = { path = "../bibtex", optional = true }
 host-reference-rst = { path = "../rst", optional = true }
+host-reference-org = { path = "../org", optional = true }
 
 # Each reader is a plugin behind a feature (call/0033). The default carries the
 # text-cheap readers, which are light. Heavier readers (office, fixed-layout,
@@ -36,6 +37,7 @@ calendar = ["dep:host-reference-calendar"]
 columnar = ["dep:host-reference-columnar"]
 bibtex = ["dep:host-reference-bibtex"]
 rst = ["dep:host-reference-rst"]
+org = ["dep:host-reference-org"]
 html = ["dep:host-reference-html"]
 vector = ["dep:host-reference-vector"]
 netlist = ["dep:host-reference-netlist"]
