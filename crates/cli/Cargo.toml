@@ -11,3 +11,4 @@ path = "src/main.rs"
 
 [dependencies]
 host-reference-core = { path = "../core" }
+host-reference-prose = { path = "../prose" }

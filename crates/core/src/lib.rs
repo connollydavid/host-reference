@@ -166,6 +166,55 @@ pub trait Normalizer {
     }
 }
 
+/// The content identity of a source: a short hex prefix of its SHA-256, the stable key the source
+/// map and the provenance record hang on (call/0030).
+pub fn content_id(bytes: &[u8]) -> String {
+    use sha2::{Digest, Sha256};
+    Sha256::digest(bytes).iter().take(6).map(|b| format!("{b:02x}")).collect()
+}
+
+/// Token count against the pinned reference tokenizer, tiktoken `o200k_base` (call/0030, settled in
+/// plan/0049). The vocab is embedded in the crate, so the count is offline and deterministic.
+///
+/// The byte-level BPE encodes any UTF-8 text, so a count is produced for every language, including
+/// Standard Chinese and other non-Latin scripts. The count is a reference yardstick: a model-native
+/// tokenizer packs CJK and other scripts more tightly, so a per-consumer tokenizer behind this same
+/// call site is future work; the savings ratio it reports stays meaningful in the meantime.
+pub fn count_tokens(text: &str) -> usize {
+    use std::sync::OnceLock;
+    use tiktoken_rs::{o200k_base, CoreBPE};
+    static BPE: OnceLock<CoreBPE> = OnceLock::new();
+    BPE.get_or_init(|| o200k_base().expect("embedded o200k_base vocab"))
+        .encode_ordinary(text)
+        .len()
+}
+
+/// The canonical, deterministic serialization of a `Tier0`, the form a conformance fixture pins and
+/// compares byte for byte. The spans are sorted by their source range, so the form is stable
+/// regardless of the order the normaliser built them in.
+pub fn serialize_tier0(t: &Tier0) -> String {
+    let mut out = String::new();
+    out.push_str("== markdown ==\n");
+    out.push_str(&t.markdown);
+    if !t.markdown.ends_with('\n') {
+        out.push('\n');
+    }
+    out.push_str("== source-map ==\n");
+    let mut spans: Vec<(usize, usize, &str)> = t
+        .source_map
+        .spans
+        .iter()
+        .map(|s| (s.origin.start, s.origin.end, s.source.as_str()))
+        .collect();
+    spans.sort();
+    for (start, end, src) in spans {
+        out.push_str(&format!("{src}:{start}-{end}\n"));
+    }
+    out.push_str("== tokens ==\n");
+    out.push_str(&format!("raw={} normalised={}\n", t.raw_tokens, t.normalised_tokens));
+    out
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
