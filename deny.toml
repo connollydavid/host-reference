@@ -1,0 +1,31 @@
+# cargo-deny licence and advisory lane for host-reference (call/0033).
+#
+# Policy: AGPL is banned and is never added to the exceptions below. GPL is
+# avoided; a GPL crate fails this lane until it is named in `exceptions`, and
+# naming it there is the deliberate act of flagging it (for example the
+# out-of-process OpenSCAD helper). Weak copyleft (MPL-2.0) and the permissive
+# licences are allowed outright. Any licence absent from `allow` fails the lane,
+# so AGPL and an unflagged GPL both stop the build.
+
+[licenses]
+version = 2
+confidence-threshold = 0.9
+# The licences encountered in the current tree. Each reader adds the licence its
+# libraries carry as it lands, which is where that licence is reviewed (call/0033).
+# The wider permissive set (the BSD pair, MPL-2.0, 0BSD, and the rest) joins on
+# first use.
+allow = [
+    "Apache-2.0",
+    "MIT",
+    "Unicode-3.0",
+    "Unlicense",
+]
+# No GPL exception yet. A GPL crate is added here by name to flag it; AGPL never is.
+#   exceptions = [{ name = "the-openscad-helper", allow = ["GPL-3.0-or-later"] }]
+exceptions = []
+
+[advisories]
+version = 2
+
+[bans]
+multiple-versions = "allow"

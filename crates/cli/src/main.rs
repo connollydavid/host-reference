@@ -5,20 +5,33 @@
 use std::process::ExitCode;
 
 use host_reference_core::{serialize_tier0, Error, Normalizer, Source, SpanSelector};
+#[cfg(feature = "data")]
 use host_reference_data::DataNormalizer;
+#[cfg(feature = "html")]
 use host_reference_html::HtmlNormalizer;
+#[cfg(feature = "netlist")]
 use host_reference_netlist::SpiceNormalizer;
+#[cfg(feature = "prose")]
 use host_reference_prose::ProseNormalizer;
+#[cfg(feature = "vector")]
 use host_reference_vector::SvgNormalizer;
 
+// Each enabled reader feature registers its normaliser; a build with none compiles
+// to an empty registry and reports every kind as unsupported.
 fn registry() -> Vec<Box<dyn Normalizer>> {
-    vec![
-        Box::new(ProseNormalizer),
-        Box::new(DataNormalizer),
-        Box::new(HtmlNormalizer),
-        Box::new(SvgNormalizer),
-        Box::new(SpiceNormalizer),
-    ]
+    #[allow(unused_mut)]
+    let mut reg: Vec<Box<dyn Normalizer>> = Vec::new();
+    #[cfg(feature = "prose")]
+    reg.push(Box::new(ProseNormalizer));
+    #[cfg(feature = "data")]
+    reg.push(Box::new(DataNormalizer));
+    #[cfg(feature = "html")]
+    reg.push(Box::new(HtmlNormalizer));
+    #[cfg(feature = "vector")]
+    reg.push(Box::new(SvgNormalizer));
+    #[cfg(feature = "netlist")]
+    reg.push(Box::new(SpiceNormalizer));
+    reg
 }
 
 fn usage() {

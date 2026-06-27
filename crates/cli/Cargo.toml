@@ -11,8 +11,21 @@ path = "src/main.rs"
 
 [dependencies]
 host-reference-core = { path = "../core" }
-host-reference-prose = { path = "../prose" }
-host-reference-data = { path = "../data" }
-host-reference-html = { path = "../html" }
-host-reference-vector = { path = "../vector" }
-host-reference-netlist = { path = "../netlist" }
+host-reference-prose = { path = "../prose", optional = true }
+host-reference-data = { path = "../data", optional = true }
+host-reference-html = { path = "../html", optional = true }
+host-reference-vector = { path = "../vector", optional = true }
+host-reference-netlist = { path = "../netlist", optional = true }
+
+# Each reader is a plugin behind a feature (call/0033). The default carries the
+# text-cheap readers, which are light. Heavier readers (office, fixed-layout,
+# recognition, geometry) land as their own features and stay out of `default`,
+# so a consumer pays only for what it stands up.
+[features]
+default = ["text"]
+text = ["prose", "data", "html", "vector", "netlist"]
+prose = ["dep:host-reference-prose"]
+data = ["dep:host-reference-data"]
+html = ["dep:host-reference-html"]
+vector = ["dep:host-reference-vector"]
+netlist = ["dep:host-reference-netlist"]
