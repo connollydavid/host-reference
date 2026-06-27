@@ -1,0 +1,14 @@
+[workspace]
+resolver = "2"
+members = ["crates/core", "crates/cli"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "Unlicense"
+
+# Reproducible builds: strip symbols and the .comment section so the release binary
+# carries no build-environment metadata. With --build-id=none (.cargo/config.toml)
+# the Linux artifact hashes the same anywhere; software --verify-build proves it.
+[profile.release]
+strip = true

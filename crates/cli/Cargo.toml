@@ -1,0 +1,13 @@
+[package]
+name = "host-reference"
+description = "host-reference CLI: a skeleton and windowed views over a normalised corpus"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "host-reference"
+path = "src/main.rs"
+
+[dependencies]
+host-reference-core = { path = "../core" }

@@ -1,0 +1,8 @@
+[package]
+name = "host-reference-core"
+description = "host-reference core: the Normalizer trait, the modality taxonomy, and the two-layer types"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]

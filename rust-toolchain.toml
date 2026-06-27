@@ -1,0 +1,5 @@
+# Pinned toolchain for reproducible builds: every build uses the same compiler and
+# std, the dominant source of artifact-hash drift. See the host methodology's
+# reproducible-build production anchor.
+[toolchain]
+channel = "1.95.0"
