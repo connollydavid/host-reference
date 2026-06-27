@@ -1,0 +1,10 @@
+[package]
+name = "host-reference-vector"
+description = "host-reference vector normaliser: SVG to labels and a geometry summary"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+host-reference-core = { path = "../core" }
+roxmltree = "0.21"

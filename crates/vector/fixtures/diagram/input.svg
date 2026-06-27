@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="100" viewBox="0 0 200 100">
+  <title>Flow</title>
+  <rect x="10" y="10" width="60" height="30" fill="#eee"/>
+  <text x="20" y="30">Start</text>
+  <path d="M70 25 L130 25" stroke="#000"/>
+  <rect x="130" y="10" width="60" height="30" fill="#eee"/>
+  <text x="140" y="30">End</text>
+</svg>

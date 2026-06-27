@@ -163,6 +163,7 @@ dependencies = [
  "host-reference-data",
  "host-reference-html",
  "host-reference-prose",
+ "host-reference-vector",
 ]
 
 [[package]]
@@ -197,6 +198,14 @@ name = "host-reference-prose"
 version = "0.1.0"
 dependencies = [
  "host-reference-core",
+]
+
+[[package]]
+name = "host-reference-vector"
+version = "0.1.0"
+dependencies = [
+ "host-reference-core",
+ "roxmltree",
 ]
 
 [[package]]

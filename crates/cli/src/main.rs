@@ -8,12 +8,14 @@ use host_reference_core::{serialize_tier0, Error, Normalizer, Source, SpanSelect
 use host_reference_data::DataNormalizer;
 use host_reference_html::HtmlNormalizer;
 use host_reference_prose::ProseNormalizer;
+use host_reference_vector::SvgNormalizer;
 
 fn registry() -> Vec<Box<dyn Normalizer>> {
     vec![
         Box::new(ProseNormalizer),
         Box::new(DataNormalizer),
         Box::new(HtmlNormalizer),
+        Box::new(SvgNormalizer),
     ]
 }
 
