@@ -7,6 +7,8 @@ use std::process::ExitCode;
 use host_reference_core::{serialize_tier0, Error, Normalizer, Source, SpanSelector};
 #[cfg(feature = "calendar")]
 use host_reference_calendar::CalendarNormalizer;
+#[cfg(feature = "columnar")]
+use host_reference_columnar::ColumnarNormalizer;
 #[cfg(feature = "config")]
 use host_reference_config::ConfigNormalizer;
 #[cfg(feature = "data")]
@@ -33,6 +35,8 @@ fn registry() -> Vec<Box<dyn Normalizer>> {
     reg.push(Box::new(ConfigNormalizer));
     #[cfg(feature = "calendar")]
     reg.push(Box::new(CalendarNormalizer));
+    #[cfg(feature = "columnar")]
+    reg.push(Box::new(ColumnarNormalizer));
     #[cfg(feature = "html")]
     reg.push(Box::new(HtmlNormalizer));
     #[cfg(feature = "vector")]

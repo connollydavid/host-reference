@@ -28,6 +28,12 @@ exceptions = []
 
 [advisories]
 version = 2
+ignore = [
+    # paste is a stable, ubiquitous proc-macro helper pulled transitively by parquet. Its author
+    # marked it unmaintained (RUSTSEC-2024-0436), but there is no vulnerability and no safe upgrade,
+    # so this informational advisory is accepted rather than failing the lane.
+    "RUSTSEC-2024-0436",
+]
 
 [bans]
 multiple-versions = "allow"
