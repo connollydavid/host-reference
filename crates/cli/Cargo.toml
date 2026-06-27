@@ -17,6 +17,7 @@ host-reference-html = { path = "../html", optional = true }
 host-reference-vector = { path = "../vector", optional = true }
 host-reference-netlist = { path = "../netlist", optional = true }
 host-reference-config = { path = "../config", optional = true }
+host-reference-calendar = { path = "../calendar", optional = true }
 
 # Each reader is a plugin behind a feature (call/0033). The default carries the
 # text-cheap readers, which are light. Heavier readers (office, fixed-layout,
@@ -28,6 +29,7 @@ text = ["prose", "data", "config", "html", "vector", "netlist"]
 prose = ["dep:host-reference-prose"]
 data = ["dep:host-reference-data"]
 config = ["dep:host-reference-config"]
+calendar = ["dep:host-reference-calendar"]
 html = ["dep:host-reference-html"]
 vector = ["dep:host-reference-vector"]
 netlist = ["dep:host-reference-netlist"]
