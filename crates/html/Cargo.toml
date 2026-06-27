@@ -1,0 +1,10 @@
+[package]
+name = "host-reference-html"
+description = "host-reference HTML normaliser: HTML5 to a markdown skeleton and view"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+host-reference-core = { path = "../core" }
+htmd = "0.5.4"

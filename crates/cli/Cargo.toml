@@ -13,3 +13,4 @@ path = "src/main.rs"
 host-reference-core = { path = "../core" }
 host-reference-prose = { path = "../prose" }
 host-reference-data = { path = "../data" }
+host-reference-html = { path = "../html" }
