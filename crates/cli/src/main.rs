@@ -5,6 +5,8 @@
 use std::process::ExitCode;
 
 use host_reference_core::{serialize_tier0, Error, Normalizer, Source, SpanSelector};
+#[cfg(feature = "bibtex")]
+use host_reference_bibtex::BibtexNormalizer;
 #[cfg(feature = "calendar")]
 use host_reference_calendar::CalendarNormalizer;
 #[cfg(feature = "columnar")]
@@ -19,6 +21,8 @@ use host_reference_html::HtmlNormalizer;
 use host_reference_netlist::SpiceNormalizer;
 #[cfg(feature = "prose")]
 use host_reference_prose::ProseNormalizer;
+#[cfg(feature = "rst")]
+use host_reference_rst::RstNormalizer;
 #[cfg(feature = "vector")]
 use host_reference_vector::SvgNormalizer;
 
@@ -37,6 +41,10 @@ fn registry() -> Vec<Box<dyn Normalizer>> {
     reg.push(Box::new(CalendarNormalizer));
     #[cfg(feature = "columnar")]
     reg.push(Box::new(ColumnarNormalizer));
+    #[cfg(feature = "bibtex")]
+    reg.push(Box::new(BibtexNormalizer));
+    #[cfg(feature = "rst")]
+    reg.push(Box::new(RstNormalizer));
     #[cfg(feature = "html")]
     reg.push(Box::new(HtmlNormalizer));
     #[cfg(feature = "vector")]
