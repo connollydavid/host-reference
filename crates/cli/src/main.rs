@@ -27,6 +27,8 @@ use host_reference_pdf::PdfNormalizer;
 use host_reference_geometry::GeometryNormalizer;
 #[cfg(feature = "eda")]
 use host_reference_eda::EdaNormalizer;
+#[cfg(feature = "image")]
+use host_reference_image::ImageNormalizer;
 #[cfg(feature = "data")]
 use host_reference_data::DataNormalizer;
 #[cfg(feature = "html")]
@@ -81,6 +83,8 @@ fn registry() -> Vec<Box<dyn Normalizer>> {
     reg.push(Box::new(GeometryNormalizer));
     #[cfg(feature = "eda")]
     reg.push(Box::new(EdaNormalizer));
+    #[cfg(feature = "image")]
+    reg.push(Box::new(ImageNormalizer));
     #[cfg(feature = "html")]
     reg.push(Box::new(HtmlNormalizer));
     #[cfg(feature = "vector")]

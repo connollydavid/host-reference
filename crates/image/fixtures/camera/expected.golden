@@ -1,0 +1,9 @@
+== markdown ==
+image: jpeg 4x3
+exif:
+- Make: "TestCam"
+- Model: "Model1"
+== source-map ==
+2878272fd1a2:0-698
+== tokens ==
+raw=698 normalised=25
