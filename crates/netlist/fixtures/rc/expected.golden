@@ -3,15 +3,16 @@
 - components:
   - C: 1
   - R: 1
-  - V: 1
-- nets (3):
+  - V: 2
+- nets (4):
   - 0
   - in
   - out
+  - vcc
 - directives:
   - .end
   - .tran
 == source-map ==
-9f57cb9b0e0b:0-71
+3fbca3ed4676:0-101
 == tokens ==
-raw=42 normalised=64
+raw=55 normalised=69

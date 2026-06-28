@@ -2,9 +2,13 @@
 - Example Document
   - Details
   - 概述
+  - Snippet
+  - Wrap-up
 == source-map ==
-52696b95a3cd:0-19
-52696b95a3cd:101-112
-52696b95a3cd:191-201
+fb771ea9334c:0-19
+fb771ea9334c:101-112
+fb771ea9334c:191-201
+fb771ea9334c:288-299
+fb771ea9334c:357-368
 == tokens ==
-raw=64 normalised=14
+raw=98 normalised=24

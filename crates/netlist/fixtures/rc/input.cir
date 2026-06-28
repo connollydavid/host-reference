@@ -2,5 +2,6 @@ RC Low-Pass Filter
 V1 in 0 5
 R1 in out 1k
 C1 out 0 1u
+V2 vcc 0 DC 12 ; bench supply
 .tran 1n 1m
 .end

@@ -76,14 +76,21 @@ impl Normalizer for ProseNormalizer {
         let mut outline = String::new();
         let mut spans = Vec::new();
         let mut offset = 0usize;
+        // A line whose trimmed form opens with three or more backticks toggles a fenced code block;
+        // a `#` line inside a fence is code, not a heading, so the scan ignores it.
+        let mut in_fence = false;
         for line in text.split_inclusive('\n') {
-            let level = heading_level(line);
-            if level >= 1 {
-                outline.push_str(&"  ".repeat(level - 1));
-                outline.push_str("- ");
-                outline.push_str(heading_title(line));
-                outline.push('\n');
-                spans.push(Span { source: id.clone(), origin: offset..offset + line.len() });
+            if line.trim_start().starts_with("```") {
+                in_fence = !in_fence;
+            } else if !in_fence {
+                let level = heading_level(line);
+                if level >= 1 {
+                    outline.push_str(&"  ".repeat(level - 1));
+                    outline.push_str("- ");
+                    outline.push_str(heading_title(line));
+                    outline.push('\n');
+                    spans.push(Span { source: id.clone(), origin: offset..offset + line.len() });
+                }
             }
             offset += line.len();
         }

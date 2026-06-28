@@ -94,9 +94,38 @@ fn section_title(section: &Section) -> String {
 fn inline_text(children: &[TextOrInlineElement]) -> String {
     let mut s = String::new();
     for c in children {
-        if let TextOrInlineElement::String(t) = c {
-            s.push_str(t.as_str());
-        }
+        push_inline(c, &mut s);
     }
     s
+}
+
+/// Append one inline element's textual content, recursing into markup so emphasis, strong, literal,
+/// reference and the rest contribute their text rather than being silently dropped.
+fn push_inline(element: &TextOrInlineElement, out: &mut String) {
+    use TextOrInlineElement as T;
+    match element {
+        T::String(t) => out.push_str(t.as_str()),
+        // Markup wrapping further inline elements: recurse into the children.
+        T::Emphasis(e) => out.push_str(&inline_text(e.children())),
+        T::Strong(e) => out.push_str(&inline_text(e.children())),
+        T::Reference(e) => out.push_str(&inline_text(e.children())),
+        T::FootnoteReference(e) => out.push_str(&inline_text(e.children())),
+        T::CitationReference(e) => out.push_str(&inline_text(e.children())),
+        T::SubstitutionReference(e) => out.push_str(&inline_text(e.children())),
+        T::TitleReference(e) => out.push_str(&inline_text(e.children())),
+        T::Abbreviation(e) => out.push_str(&inline_text(e.children())),
+        T::Acronym(e) => out.push_str(&inline_text(e.children())),
+        T::Superscript(e) => out.push_str(&inline_text(e.children())),
+        T::Subscript(e) => out.push_str(&inline_text(e.children())),
+        T::Inline(e) => out.push_str(&inline_text(e.children())),
+        T::Problematic(e) => out.push_str(&inline_text(e.children())),
+        T::Generated(e) => out.push_str(&inline_text(e.children())),
+        // Markup wrapping plain strings.
+        T::Literal(e) => e.children().iter().for_each(|t| out.push_str(t)),
+        T::Math(e) => e.children().iter().for_each(|t| out.push_str(t)),
+        T::TargetInline(e) => e.children().iter().for_each(|t| out.push_str(t)),
+        T::RawInline(e) => e.children().iter().for_each(|t| out.push_str(t)),
+        // An inline image carries no textual content.
+        T::ImageInline(_) => {}
+    }
 }

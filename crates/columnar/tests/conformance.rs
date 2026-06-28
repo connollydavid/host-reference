@@ -35,7 +35,13 @@ fn sample_batch() -> RecordBatch {
 
 fn gen_parquet() -> Vec<u8> {
     let batch = sample_batch();
-    let props = WriterProperties::builder().set_compression(Compression::UNCOMPRESSED).build();
+    // Pin `created_by` to a fixed string so the buffer (and thus the golden) does not embed the
+    // parquet-rs version. Otherwise the golden's content id and raw_tokens track the dependency
+    // patch version rather than the source under test.
+    let props = WriterProperties::builder()
+        .set_compression(Compression::UNCOMPRESSED)
+        .set_created_by("host-reference conformance fixture".to_string())
+        .build();
     let mut buf = Vec::new();
     let mut writer = ArrowWriter::try_new(&mut buf, batch.schema(), Some(props)).expect("writer");
     writer.write(&batch).expect("write");

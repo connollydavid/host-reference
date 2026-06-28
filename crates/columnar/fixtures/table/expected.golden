@@ -4,6 +4,6 @@ parquet: 3 columns, 3 rows
 - name: BYTE_ARRAY
 - score: DOUBLE
 == source-map ==
-e9b68265a677:0-1071
+d042badf7dfe:0-1080
 == tokens ==
-raw=721 normalised=28
+raw=715 normalised=28

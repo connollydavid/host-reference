@@ -55,13 +55,27 @@ impl Normalizer for SpiceNormalizer {
                 directives.insert(rest.split_whitespace().next().unwrap_or(""));
                 continue;
             }
-            let toks: Vec<&str> = l.split_whitespace().collect();
+            // Drop an inline comment: a SPICE comment runs from `;` to the end of the line.
+            let code = l.split(';').next().unwrap_or(l);
+            let toks: Vec<&str> = code.split_whitespace().collect();
+            if toks.is_empty() {
+                continue;
+            }
             let ty = toks[0].chars().next().unwrap_or('?').to_ascii_uppercase();
             *components.entry(ty).or_insert(0) += 1;
-            // Nodes are the tokens between the designator and the trailing value or model.
-            if toks.len() >= 3 {
-                for net in &toks[1..toks.len() - 1] {
+            // The node terminals follow the reference designator; how many there are is fixed by the
+            // element type, so the trailing value or model name is not mistaken for a net.
+            if let Some(n) = node_count(ty) {
+                for net in toks.iter().skip(1).take(n) {
                     nets.insert(net);
+                }
+            } else {
+                // Unmodelled arity (for example `X` subcircuit calls): keep the conservative previous
+                // heuristic for that line, every token between the designator and the trailing one.
+                if toks.len() >= 3 {
+                    for net in &toks[1..toks.len() - 1] {
+                        nets.insert(net);
+                    }
                 }
             }
         }
@@ -104,5 +118,51 @@ impl Normalizer for SpiceNormalizer {
             markdown: text[start..end].to_string(),
             source_map: SourceMap { spans: vec![Span { source: id, origin: start..end }] },
         })
+    }
+}
+
+/// The number of node terminals a SPICE element exposes, keyed by the leading letter of its
+/// reference designator (case already folded by the caller). `None` is an element whose arity is not
+/// modelled (for example `X` subcircuit calls), handled conservatively at the call site.
+fn node_count(ty: char) -> Option<usize> {
+    match ty {
+        'R' | 'C' | 'L' | 'V' | 'I' | 'D' => Some(2),
+        'Q' => Some(3),
+        'M' | 'J' => Some(4),
+        _ => None,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn nets_of(netlist: &str) -> Vec<String> {
+        let t = SpiceNormalizer
+            .skeleton(&Source { bytes: netlist.as_bytes(), hint: Some("cir") })
+            .expect("skeleton");
+        // The nets are emitted one per `  - <net>` bullet under the `- nets (N):` header.
+        t.markdown
+            .lines()
+            .skip_while(|l| !l.starts_with("- nets ("))
+            .skip(1)
+            .take_while(|l| l.starts_with("  - "))
+            .map(|l| l.trim_start_matches("  - ").to_string())
+            .collect()
+    }
+
+    #[test]
+    fn nets_follow_element_arity_and_ignore_values_and_comments() {
+        let netlist = "Mixed Arity\n\
+            R1 in out 1k ; load resistor\n\
+            Q1 c b e qmod\n\
+            M1 d g s b nmos L=1u\n\
+            * a whole-line comment, skipped\n\
+            X1 a b sub1\n\
+            .end\n";
+        // R takes 2 nodes (in, out; the value 1k and the `;` comment are not nets); Q takes 3
+        // (c, b, e; the model qmod is not); M takes 4 (d, g, s, b; nmos and L=1u are not); the `*`
+        // line is skipped; X has unmodelled arity, so the conservative heuristic keeps a, b.
+        assert_eq!(nets_of(netlist), ["a", "b", "c", "d", "e", "g", "in", "out", "s"]);
     }
 }

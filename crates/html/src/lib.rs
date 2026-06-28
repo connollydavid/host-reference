@@ -27,8 +27,18 @@ impl HtmlNormalizer {
 /// The heading outline of markdown: each ATX heading as an indented bullet.
 fn heading_outline(md: &str) -> String {
     let mut out = String::new();
+    // Track fenced code blocks: a line whose trimmed form opens with three or more backticks
+    // toggles the fence, and a `#` line inside one is code, not a heading.
+    let mut in_fence = false;
     for line in md.lines() {
         let t = line.trim_start();
+        if t.starts_with("```") {
+            in_fence = !in_fence;
+            continue;
+        }
+        if in_fence {
+            continue;
+        }
         let hashes = t.bytes().take_while(|b| *b == b'#').count();
         if hashes >= 1 && t.as_bytes().get(hashes) == Some(&b' ') {
             out.push_str(&"  ".repeat(hashes - 1));
@@ -84,9 +94,30 @@ impl Normalizer for HtmlNormalizer {
         };
         Ok(Tier1 {
             markdown: md[start..end].to_string(),
-            source_map: SourceMap {
-                spans: vec![Span { source: id, origin: 0..source.bytes.len() }],
-            },
+            // The HTML source map is in converted-markdown space: htmd rewrites positions, so the
+            // raw-HTML origin is not recoverable without a position map htmd does not expose. The span
+            // therefore reports the window within the converted markdown that was returned.
+            source_map: SourceMap { spans: vec![Span { source: id, origin: start..end }] },
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn view_origin_is_the_returned_window_not_the_raw_length() {
+        // The raw HTML is far longer than the markdown htmd produces from it.
+        let html = b"<main><h1>Title</h1><p>Body paragraph with several words.</p></main>";
+        let source = Source { bytes: html, hint: Some("html") };
+        let v = HtmlNormalizer
+            .view(&source, &SpanSelector::CharOffset { start: 0, len: 5 })
+            .expect("view");
+        let span = &v.source_map.spans[0];
+        // The reported origin spans exactly the returned window, measured in converted-markdown
+        // bytes, not the raw-HTML byte length.
+        assert_eq!(span.origin.end - span.origin.start, v.markdown.len());
+        assert_ne!(span.origin.end, html.len());
     }
 }

@@ -29,3 +29,10 @@ fn check(dir: &str, input: &str, hint: &str) {
 fn rst_guide_shape() {
     check("guide", "input.rst", "rst");
 }
+
+// A section title with inline markup (literal, emphasis, strong); the outline must keep the full
+// title text rather than dropping the marked-up runs.
+#[test]
+fn rst_title_with_inline_markup() {
+    check("markup", "input.rst", "rst");
+}
