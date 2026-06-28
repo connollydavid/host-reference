@@ -1,0 +1,18 @@
+[package]
+name = "host-reference-geometry"
+description = "host-reference engineering-geometry normaliser: STL, glTF, DXF, OBJ, PLY, G-code, 3MF, AMF, STEP"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+host-reference-core = { path = "../core" }
+stl_io = "0.8"
+gltf = "1.4"
+dxf = "0.6"
+tobj = "4"
+ply-rs-bw = "4"
+gcode = "0.7"
+threemf = "0.8"
+ruststep = "0.4"
+roxmltree = "0.20"

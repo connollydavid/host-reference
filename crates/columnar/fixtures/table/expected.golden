@@ -1,0 +1,9 @@
+== markdown ==
+parquet: 3 columns, 3 rows
+- id: INT64
+- name: BYTE_ARRAY
+- score: DOUBLE
+== source-map ==
+e9b68265a677:0-1071
+== tokens ==
+raw=721 normalised=28

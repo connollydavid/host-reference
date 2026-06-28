@@ -1,0 +1,10 @@
+[package]
+name = "host-reference-calendar"
+description = "host-reference calendar normaliser: iCalendar and vCard"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+host-reference-core = { path = "../core" }
+calcard = "0.3"

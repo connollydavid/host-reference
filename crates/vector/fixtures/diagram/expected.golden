@@ -1,0 +1,16 @@
+== markdown ==
+- svg: 200 x 100 (viewBox 0 0 200 100)
+- elements:
+  - path: 1
+  - rect: 2
+  - svg: 1
+  - text: 2
+  - title: 1
+- labels:
+  - Flow
+  - Start
+  - End
+== source-map ==
+cd142fa620a5:0-387
+== tokens ==
+raw=154 normalised=73

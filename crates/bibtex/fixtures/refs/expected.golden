@@ -1,0 +1,9 @@
+== markdown ==
+bibliography: 3 entries
+- doe2019 [Book]
+- lee2021 [InProceedings]
+- smith2020 [Article]
+== source-map ==
+96091de2a395:0-391
+== tokens ==
+raw=123 normalised=30

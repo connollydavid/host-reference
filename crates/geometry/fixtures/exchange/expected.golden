@@ -1,0 +1,9 @@
+== markdown ==
+step: 4 entities
+- CARTESIAN_POINT (x2)
+- DIRECTION
+- VERTEX_POINT
+== source-map ==
+1a6c9aa10bca:0-352
+== tokens ==
+raw=144 normalised=25

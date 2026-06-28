@@ -1,0 +1,9 @@
+[package]
+name = "host-reference-prose"
+description = "host-reference prose normaliser: markdown and plain text"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+host-reference-core = { path = "../core" }

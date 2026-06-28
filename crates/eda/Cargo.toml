@@ -1,0 +1,12 @@
+[package]
+name = "host-reference-eda"
+description = "host-reference engineering-EDA normaliser: KiCad, Gerber, Eagle"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+host-reference-core = { path = "../core" }
+lexpr = "0.2"
+gerber_parser = "0.5"
+roxmltree = "0.20"

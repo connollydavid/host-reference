@@ -1,9 +1,9 @@
 [workspace]
 resolver = "2"
-members = ["crates/core", "crates/cli"]
+members = ["crates/core", "crates/cli", "crates/prose", "crates/data", "crates/config", "crates/calendar", "crates/columnar", "crates/bibtex", "crates/rst", "crates/org", "crates/asciidoc", "crates/rtf", "crates/epub", "crates/office", "crates/mail", "crates/pdf", "crates/geometry", "crates/eda", "crates/image", "crates/av", "crates/ocr", "crates/openscad", "crates/overlay", "crates/html", "crates/vector", "crates/netlist"]
 
 [workspace.package]
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 license = "Unlicense"
 

@@ -1,0 +1,16 @@
+[package]
+name = "host-reference-columnar"
+description = "host-reference columnar normaliser: Apache Parquet and Arrow IPC"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+# Pure-Rust: no codec feature is enabled, so the C zstd codec is never linked. The skeleton reads
+# only the file metadata (schema and row count), which is uncompressed, so no data-page codec is
+# needed. The `arrow` feature on parquet pulls the (pure-Rust) arrow crate already depended on, and
+# lets the conformance test write an uncompressed fixture in memory.
+[dependencies]
+host-reference-core = { path = "../core" }
+parquet = { version = "59", default-features = false, features = ["arrow"] }
+arrow = { version = "59", default-features = false, features = ["ipc"] }
+bytes = "1"

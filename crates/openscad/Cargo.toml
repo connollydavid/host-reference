@@ -1,0 +1,9 @@
+[package]
+name = "host-reference-openscad"
+description = "host-reference OpenSCAD normaliser: an out-of-process plugin (call/0033, call/0034) running the GPL openscad helper at arm's length"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+host-reference-core = { path = "../core" }

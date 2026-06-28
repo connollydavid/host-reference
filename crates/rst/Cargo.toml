@@ -1,0 +1,11 @@
+[package]
+name = "host-reference-rst"
+description = "host-reference reStructuredText normaliser: section outline"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+host-reference-core = { path = "../core" }
+rst_parser = "0.4"
+document_tree = "0.4"

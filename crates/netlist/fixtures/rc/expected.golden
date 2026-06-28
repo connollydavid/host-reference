@@ -1,0 +1,17 @@
+== markdown ==
+- title: RC Low-Pass Filter
+- components:
+  - C: 1
+  - R: 1
+  - V: 1
+- nets (3):
+  - 0
+  - in
+  - out
+- directives:
+  - .end
+  - .tran
+== source-map ==
+9f57cb9b0e0b:0-71
+== tokens ==
+raw=42 normalised=64

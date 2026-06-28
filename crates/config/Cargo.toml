@@ -1,0 +1,12 @@
+[package]
+name = "host-reference-config"
+description = "host-reference config normaliser: INI, Java properties, and dotenv"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+host-reference-core = { path = "../core" }
+rust-ini = "0.21"
+java-properties = "2"
+dotenvy = "0.15"

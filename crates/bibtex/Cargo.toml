@@ -1,0 +1,10 @@
+[package]
+name = "host-reference-bibtex"
+description = "host-reference BibTeX normaliser: bibliography entries"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+host-reference-core = { path = "../core" }
+biblatex = "0.12"

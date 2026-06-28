@@ -1,0 +1,10 @@
+== markdown ==
+kicad: 5 forms
+- generator
+- symbol (x2)
+- version
+- wire
+== source-map ==
+6e42f3ceaad2:0-190
+== tokens ==
+raw=78 normalised=23

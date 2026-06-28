@@ -11,3 +11,61 @@ path = "src/main.rs"
 
 [dependencies]
 host-reference-core = { path = "../core" }
+host-reference-prose = { path = "../prose", optional = true }
+host-reference-data = { path = "../data", optional = true }
+host-reference-html = { path = "../html", optional = true }
+host-reference-vector = { path = "../vector", optional = true }
+host-reference-netlist = { path = "../netlist", optional = true }
+host-reference-config = { path = "../config", optional = true }
+host-reference-calendar = { path = "../calendar", optional = true }
+host-reference-columnar = { path = "../columnar", optional = true }
+host-reference-bibtex = { path = "../bibtex", optional = true }
+host-reference-rst = { path = "../rst", optional = true }
+host-reference-org = { path = "../org", optional = true }
+host-reference-asciidoc = { path = "../asciidoc", optional = true }
+host-reference-rtf = { path = "../rtf", optional = true }
+host-reference-epub = { path = "../epub", optional = true }
+host-reference-office = { path = "../office", optional = true }
+host-reference-mail = { path = "../mail", optional = true }
+host-reference-pdf = { path = "../pdf", optional = true }
+host-reference-geometry = { path = "../geometry", optional = true }
+host-reference-eda = { path = "../eda", optional = true }
+host-reference-image = { path = "../image", optional = true }
+host-reference-av = { path = "../av", optional = true }
+host-reference-ocr = { path = "../ocr", optional = true }
+host-reference-openscad = { path = "../openscad", optional = true }
+
+# Each reader is a plugin behind a feature (call/0033). The default carries the
+# text-cheap readers, which are light. Heavier readers (office, fixed-layout,
+# recognition, geometry) land as their own features and stay out of `default`,
+# so a consumer pays only for what it stands up.
+[features]
+default = ["text"]
+text = ["prose", "data", "config", "html", "vector", "netlist"]
+prose = ["dep:host-reference-prose"]
+data = ["dep:host-reference-data"]
+config = ["dep:host-reference-config"]
+calendar = ["dep:host-reference-calendar"]
+columnar = ["dep:host-reference-columnar"]
+bibtex = ["dep:host-reference-bibtex"]
+rst = ["dep:host-reference-rst"]
+org = ["dep:host-reference-org"]
+asciidoc = ["dep:host-reference-asciidoc"]
+rtf = ["dep:host-reference-rtf"]
+epub = ["dep:host-reference-epub"]
+office = ["dep:host-reference-office"]
+mail = ["dep:host-reference-mail"]
+pdf = ["dep:host-reference-pdf"]
+geometry = ["dep:host-reference-geometry"]
+eda = ["dep:host-reference-eda"]
+image = ["dep:host-reference-image"]
+av = ["dep:host-reference-av"]
+# The OCR plugin runs the host-reference-ocr-helper binary out-of-process (call/0033); enabling this
+# feature links only the permissive plugin, never the engine or the CC-BY-SA-4.0 models.
+ocr = ["dep:host-reference-ocr"]
+# The OpenSCAD plugin runs the host-reference-openscad-helper binary out-of-process (call/0033); the
+# GPL openscad-rs parser stays behind that boundary, never linked into this build.
+openscad = ["dep:host-reference-openscad"]
+html = ["dep:host-reference-html"]
+vector = ["dep:host-reference-vector"]
+netlist = ["dep:host-reference-netlist"]

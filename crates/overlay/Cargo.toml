@@ -1,0 +1,17 @@
+[package]
+name = "host-reference-overlay"
+description = "host-reference overlay: the mutable Loro layer, anchored to the immutable layer by W3C Web Annotation selectors (call/0030)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+host-reference-core = { path = "../core" }
+loro = "1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[dev-dependencies]
+proptest = "1"
+host-reference-prose = { path = "../prose" }
+host-reference-data = { path = "../data" }

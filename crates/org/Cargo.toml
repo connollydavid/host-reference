@@ -1,0 +1,10 @@
+[package]
+name = "host-reference-org"
+description = "host-reference Org-mode normaliser: headline outline"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+host-reference-core = { path = "../core" }
+orgize = "0.9"

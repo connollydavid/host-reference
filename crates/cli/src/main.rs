@@ -1,57 +1,193 @@
-//! host-reference CLI: a thin entry over the core. The `skeleton` and `view` commands
-//! are the consumer surface (the windowed-retrieval selector validated at the weak-agent
-//! bar, plan/0049). The format normalisers land per content kind in the build waves; this
-//! entry wires the commands, reads the source, and refuses cleanly until a normaliser is
-//! registered for the kind.
+//! host-reference CLI: a thin entry over the registered normalisers. `skeleton` prints the tier-0
+//! skeleton; `view` prints a windowed slice (the consumer surface validated at the weak-agent bar,
+//! plan/0049). Normalisers are registered here, one per content kind, as the build waves land them.
 
 use std::process::ExitCode;
 
-use host_reference_core::{Error, Source};
+use host_reference_core::{serialize_tier0, Error, Normalizer, Source, SpanSelector};
+#[cfg(feature = "asciidoc")]
+use host_reference_asciidoc::AsciidocNormalizer;
+#[cfg(feature = "bibtex")]
+use host_reference_bibtex::BibtexNormalizer;
+#[cfg(feature = "calendar")]
+use host_reference_calendar::CalendarNormalizer;
+#[cfg(feature = "columnar")]
+use host_reference_columnar::ColumnarNormalizer;
+#[cfg(feature = "config")]
+use host_reference_config::ConfigNormalizer;
+#[cfg(feature = "epub")]
+use host_reference_epub::EpubNormalizer;
+#[cfg(feature = "office")]
+use host_reference_office::OfficeNormalizer;
+#[cfg(feature = "mail")]
+use host_reference_mail::MailNormalizer;
+#[cfg(feature = "pdf")]
+use host_reference_pdf::PdfNormalizer;
+#[cfg(feature = "geometry")]
+use host_reference_geometry::GeometryNormalizer;
+#[cfg(feature = "eda")]
+use host_reference_eda::EdaNormalizer;
+#[cfg(feature = "image")]
+use host_reference_image::ImageNormalizer;
+#[cfg(feature = "av")]
+use host_reference_av::AvNormalizer;
+#[cfg(feature = "ocr")]
+use host_reference_ocr::OcrNormalizer;
+#[cfg(feature = "openscad")]
+use host_reference_openscad::OpenscadNormalizer;
+#[cfg(feature = "data")]
+use host_reference_data::DataNormalizer;
+#[cfg(feature = "html")]
+use host_reference_html::HtmlNormalizer;
+#[cfg(feature = "netlist")]
+use host_reference_netlist::SpiceNormalizer;
+#[cfg(feature = "prose")]
+use host_reference_prose::ProseNormalizer;
+#[cfg(feature = "org")]
+use host_reference_org::OrgNormalizer;
+#[cfg(feature = "rst")]
+use host_reference_rst::RstNormalizer;
+#[cfg(feature = "rtf")]
+use host_reference_rtf::RtfNormalizer;
+#[cfg(feature = "vector")]
+use host_reference_vector::SvgNormalizer;
+
+// Each enabled reader feature registers its normaliser; a build with none compiles
+// to an empty registry and reports every kind as unsupported.
+// The registry is built by cfg-gated pushes, so it cannot be a `vec!` literal.
+#[allow(clippy::vec_init_then_push)]
+fn registry() -> Vec<Box<dyn Normalizer>> {
+    #[allow(unused_mut)]
+    let mut reg: Vec<Box<dyn Normalizer>> = Vec::new();
+    #[cfg(feature = "prose")]
+    reg.push(Box::new(ProseNormalizer));
+    #[cfg(feature = "data")]
+    reg.push(Box::new(DataNormalizer));
+    #[cfg(feature = "config")]
+    reg.push(Box::new(ConfigNormalizer));
+    #[cfg(feature = "calendar")]
+    reg.push(Box::new(CalendarNormalizer));
+    #[cfg(feature = "columnar")]
+    reg.push(Box::new(ColumnarNormalizer));
+    #[cfg(feature = "bibtex")]
+    reg.push(Box::new(BibtexNormalizer));
+    #[cfg(feature = "rst")]
+    reg.push(Box::new(RstNormalizer));
+    #[cfg(feature = "org")]
+    reg.push(Box::new(OrgNormalizer));
+    #[cfg(feature = "asciidoc")]
+    reg.push(Box::new(AsciidocNormalizer));
+    #[cfg(feature = "rtf")]
+    reg.push(Box::new(RtfNormalizer));
+    #[cfg(feature = "epub")]
+    reg.push(Box::new(EpubNormalizer));
+    #[cfg(feature = "office")]
+    reg.push(Box::new(OfficeNormalizer));
+    #[cfg(feature = "mail")]
+    reg.push(Box::new(MailNormalizer));
+    #[cfg(feature = "pdf")]
+    reg.push(Box::new(PdfNormalizer));
+    #[cfg(feature = "geometry")]
+    reg.push(Box::new(GeometryNormalizer));
+    #[cfg(feature = "eda")]
+    reg.push(Box::new(EdaNormalizer));
+    #[cfg(feature = "image")]
+    reg.push(Box::new(ImageNormalizer));
+    #[cfg(feature = "av")]
+    reg.push(Box::new(AvNormalizer));
+    #[cfg(feature = "ocr")]
+    reg.push(Box::new(OcrNormalizer));
+    #[cfg(feature = "openscad")]
+    reg.push(Box::new(OpenscadNormalizer));
+    #[cfg(feature = "html")]
+    reg.push(Box::new(HtmlNormalizer));
+    #[cfg(feature = "vector")]
+    reg.push(Box::new(SvgNormalizer));
+    #[cfg(feature = "netlist")]
+    reg.push(Box::new(SpiceNormalizer));
+    reg
+}
 
 fn usage() {
     eprintln!(
         "host-reference: normalise external documentation into a token-lean, attestable form\n\
          \n\
          usage:\n\
-         \x20 host-reference skeleton <source>             print the tier-0 skeleton\n\
-         \x20 host-reference view <source> --select <sel>  print a windowed view\n\
+         \x20 host-reference skeleton <source>                  print the tier-0 skeleton\n\
+         \x20 host-reference view <source> --select <selector>  print a windowed view\n\
          \n\
-         the format normalisers land per content kind in the build waves (plan/0049)."
+         selectors: section:<title>  |  offset:<start>:<len>"
     );
 }
 
-fn read_source(path: &str) -> Result<(), Error> {
-    let bytes = std::fs::read(path).map_err(|e| Error::Parse(e.to_string()))?;
-    let _source = Source { bytes: &bytes, hint: path.rsplit('.').next() };
-    // No normaliser is registered yet; the kinds land per content kind in the build
-    // waves. Refuse cleanly rather than emit a silent empty result.
-    Err(Error::Unsupported("no normaliser is registered for this kind yet"))
+fn hint(path: &str) -> Option<&str> {
+    path.rsplit('.').next()
+}
+
+fn pick<'a>(reg: &'a [Box<dyn Normalizer>], source: &Source) -> Result<&'a dyn Normalizer, Error> {
+    reg.iter()
+        .map(|n| n.as_ref())
+        .find(|n| n.detect(source))
+        .ok_or(Error::Unsupported("no normaliser is registered for this kind"))
+}
+
+fn parse_selector(s: &str) -> Result<SpanSelector, Error> {
+    if let Some(title) = s.strip_prefix("section:") {
+        Ok(SpanSelector::Section(title.to_string()))
+    } else if let Some(rest) = s.strip_prefix("offset:") {
+        let (a, b) = rest.split_once(':').ok_or(Error::Parse("offset:<start>:<len>".into()))?;
+        let start = a.parse().map_err(|_| Error::Parse("offset start".into()))?;
+        let len = b.parse().map_err(|_| Error::Parse("offset len".into()))?;
+        Ok(SpanSelector::CharOffset { start, len })
+    } else {
+        Err(Error::Parse(format!("unknown selector {s:?}")))
+    }
+}
+
+fn run(args: &[String]) -> Result<String, Error> {
+    let reg = registry();
+    match args.first().map(String::as_str) {
+        Some("skeleton") => {
+            let path = args.get(1).ok_or(Error::Parse("skeleton needs a source path".into()))?;
+            let bytes = std::fs::read(path).map_err(|e| Error::Parse(e.to_string()))?;
+            let source = Source { bytes: &bytes, hint: hint(path) };
+            let t0 = pick(&reg, &source)?.skeleton(&source)?;
+            Ok(serialize_tier0(&t0))
+        }
+        Some("view") => {
+            let path = args.get(1).ok_or(Error::Parse("view needs a source path".into()))?;
+            let sel = match args.iter().position(|a| a == "--select") {
+                Some(i) => args
+                    .get(i + 1)
+                    .ok_or(Error::Parse("--select needs a selector".into()))?,
+                None => return Err(Error::Parse("view needs --select <selector>".into())),
+            };
+            let bytes = std::fs::read(path).map_err(|e| Error::Parse(e.to_string()))?;
+            let source = Source { bytes: &bytes, hint: hint(path) };
+            let t1 = pick(&reg, &source)?.view(&source, &parse_selector(sel)?)?;
+            Ok(t1.markdown)
+        }
+        _ => Err(Error::Unsupported("command")),
+    }
 }
 
 fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
     match args.first().map(String::as_str) {
-        Some("skeleton") | Some("view") => match args.get(1) {
-            Some(path) => match read_source(path) {
-                Ok(()) => ExitCode::SUCCESS,
-                Err(e) => {
-                    eprintln!("host-reference: {e}");
-                    ExitCode::from(2)
-                }
-            },
-            None => {
-                eprintln!("host-reference: '{}' needs a source path", args[0]);
-                ExitCode::from(2)
-            }
-        },
         Some("--help") | Some("-h") | None => {
             usage();
             ExitCode::SUCCESS
         }
-        Some(other) => {
-            eprintln!("host-reference: unknown command '{other}'");
-            usage();
-            ExitCode::from(2)
-        }
+        _ => match run(&args) {
+            Ok(out) => {
+                print!("{out}");
+                ExitCode::SUCCESS
+            }
+            Err(e) => {
+                eprintln!("host-reference: {e}");
+                usage();
+                ExitCode::from(2)
+            }
+        },
     }
 }

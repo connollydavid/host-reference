@@ -1,0 +1,11 @@
+[package]
+name = "host-reference-pdf"
+description = "host-reference fixed-layout normaliser: born-digital PDF"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+host-reference-core = { path = "../core" }
+lopdf = "0.42"
+pdf-extract = "0.12"

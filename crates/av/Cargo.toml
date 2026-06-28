@@ -1,0 +1,11 @@
+[package]
+name = "host-reference-av"
+description = "host-reference audio-visual normaliser: attested container and codec metadata"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+host-reference-core = { path = "../core" }
+symphonia = "0.5"
+mp4 = "0.14"
