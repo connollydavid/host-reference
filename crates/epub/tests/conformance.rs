@@ -81,8 +81,10 @@ fn gen_epub() -> Vec<u8> {
     zip.start_file("mimetype", stored).unwrap();
     zip.write_all(b"application/epub+zip").unwrap();
 
+    // Stored (no compression) so the bytes do not depend on the deflate backend, which can vary with
+    // zip feature unification across the workspace and would otherwise drift the content id.
     let opts = SimpleFileOptions::default()
-        .compression_method(CompressionMethod::Deflated)
+        .compression_method(CompressionMethod::Stored)
         .last_modified_time(when);
     for (name, content) in [
         ("META-INF/container.xml", CONTAINER),

@@ -14,8 +14,10 @@ use zip::CompressionMethod;
 
 fn gen_zip(parts: &[(&str, &str)]) -> Vec<u8> {
     let mut zip = ZipWriter::new(Cursor::new(Vec::new()));
+    // Stored (no compression) so the bytes do not depend on the deflate backend, which can vary
+    // with zip feature unification across the workspace and would otherwise drift the content id.
     let opts = SimpleFileOptions::default()
-        .compression_method(CompressionMethod::Deflated)
+        .compression_method(CompressionMethod::Stored)
         .last_modified_time(zip::DateTime::default());
     for (name, content) in parts {
         zip.start_file(*name, opts).expect("start_file");
