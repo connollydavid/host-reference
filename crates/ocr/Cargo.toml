@@ -1,0 +1,9 @@
+[package]
+name = "host-reference-ocr"
+description = "host-reference OCR normaliser: the first out-of-process plugin (call/0033), running the ocr helper at arm's length"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+host-reference-core = { path = "../core" }

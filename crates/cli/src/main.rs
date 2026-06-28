@@ -31,6 +31,8 @@ use host_reference_eda::EdaNormalizer;
 use host_reference_image::ImageNormalizer;
 #[cfg(feature = "av")]
 use host_reference_av::AvNormalizer;
+#[cfg(feature = "ocr")]
+use host_reference_ocr::OcrNormalizer;
 #[cfg(feature = "data")]
 use host_reference_data::DataNormalizer;
 #[cfg(feature = "html")]
@@ -89,6 +91,8 @@ fn registry() -> Vec<Box<dyn Normalizer>> {
     reg.push(Box::new(ImageNormalizer));
     #[cfg(feature = "av")]
     reg.push(Box::new(AvNormalizer));
+    #[cfg(feature = "ocr")]
+    reg.push(Box::new(OcrNormalizer));
     #[cfg(feature = "html")]
     reg.push(Box::new(HtmlNormalizer));
     #[cfg(feature = "vector")]
