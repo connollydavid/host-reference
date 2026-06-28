@@ -121,14 +121,27 @@ fn usage() {
 }
 
 fn hint(path: &str) -> Option<&str> {
-    path.rsplit('.').next()
+    // The extension of the file name, not of the whole path: a dotless name (`net`, `org`) has no
+    // hint and must not route by its bare name (the dotless-path finding), and a dot in a directory
+    // is not an extension.
+    let name = path.rsplit(['/', '\\']).next().unwrap_or(path);
+    name.rsplit_once('.').map(|(_, ext)| ext)
 }
 
 fn pick<'a>(reg: &'a [Box<dyn Normalizer>], source: &Source) -> Result<&'a dyn Normalizer, Error> {
-    reg.iter()
-        .map(|n| n.as_ref())
-        .find(|n| n.detect(source))
-        .ok_or(Error::Unsupported("no normaliser is registered for this kind"))
+    // First match in registration order is unambiguous for a single-claim kind. When more than one
+    // reader claims the same source (image and OCR both detect rasters, finding 6), surface the
+    // collision rather than silently picking the first; the operator enables only the wanted reader.
+    let mut hits = reg.iter().map(|n| n.as_ref()).filter(|n| n.detect(source));
+    let first = hits.next().ok_or(Error::Unsupported("no normaliser is registered for this kind"))?;
+    if hits.next().is_some() {
+        return Err(Error::Refused(
+            "more than one reader claims this kind (e.g. image and OCR both read rasters); \
+             build with only the wanted reader feature"
+                .into(),
+        ));
+    }
+    Ok(first)
 }
 
 fn parse_selector(s: &str) -> Result<SpanSelector, Error> {
@@ -154,7 +167,8 @@ fn run(args: &[String]) -> Result<String, Error> {
         Some("skeleton") => {
             let path = args.get(1).ok_or(Error::Parse("skeleton needs a source path".into()))?;
             let bytes = std::fs::read(path).map_err(|e| Error::Parse(e.to_string()))?;
-            let source = Source { bytes: &bytes, hint: hint(path) };
+            let lc = hint(path).map(str::to_ascii_lowercase);
+            let source = Source { bytes: &bytes, hint: lc.as_deref() };
             let t0 = pick(&reg, &source)?.skeleton(&source)?;
             Ok(serialize_tier0(&t0))
         }
@@ -167,7 +181,8 @@ fn run(args: &[String]) -> Result<String, Error> {
                 None => return Err(Error::Parse("view needs --select <selector>".into())),
             };
             let bytes = std::fs::read(path).map_err(|e| Error::Parse(e.to_string()))?;
-            let source = Source { bytes: &bytes, hint: hint(path) };
+            let lc = hint(path).map(str::to_ascii_lowercase);
+            let source = Source { bytes: &bytes, hint: lc.as_deref() };
             let t1 = pick(&reg, &source)?.view(&source, &parse_selector(sel)?)?;
             Ok(t1.markdown)
         }
@@ -193,5 +208,59 @@ fn main() -> ExitCode {
                 ExitCode::from(2)
             }
         },
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use host_reference_core::{Caps, Modality, Tier0, Tier1};
+
+    #[test]
+    fn hint_is_the_file_extension_only() {
+        assert_eq!(hint("notes.txt"), Some("txt"));
+        assert_eq!(hint("/a/b/photo.JPG"), Some("JPG"));
+        // a dotless name has no hint, so it does not route by its bare name (dotless-path finding).
+        assert_eq!(hint("net"), None);
+        // a dot in a directory is not an extension.
+        assert_eq!(hint("/home/user.name/notes"), None);
+    }
+
+    #[test]
+    fn parse_selector_rejects_an_overflowing_offset() {
+        // finding 1: an unbounded len that would overflow start+len is refused at parse.
+        assert!(matches!(parse_selector("offset:1:18446744073709551615"), Err(Error::Parse(_))));
+        assert!(parse_selector("offset:0:5").is_ok());
+    }
+
+    // Two stand-in readers that both claim the same source, the image/OCR collision shape.
+    struct ClaimsAll;
+    impl Normalizer for ClaimsAll {
+        fn modality(&self) -> Modality {
+            Modality::Raster
+        }
+        fn capabilities(&self) -> Caps {
+            Caps::default()
+        }
+        fn detect(&self, _source: &Source) -> bool {
+            true
+        }
+        fn skeleton(&self, _source: &Source) -> Result<Tier0, Error> {
+            Ok(Tier0::default())
+        }
+        fn view(&self, _source: &Source, _select: &SpanSelector) -> Result<Tier1, Error> {
+            Ok(Tier1::default())
+        }
+    }
+
+    #[test]
+    fn pick_surfaces_a_collision_instead_of_picking_the_first() {
+        let source = Source { bytes: b"x", hint: Some("png") };
+        let one: Vec<Box<dyn Normalizer>> = vec![Box::new(ClaimsAll)];
+        assert!(pick(&one, &source).is_ok());
+        let two: Vec<Box<dyn Normalizer>> = vec![Box::new(ClaimsAll), Box::new(ClaimsAll)];
+        assert!(matches!(pick(&two, &source), Err(Error::Refused(_))));
+        let none: Vec<Box<dyn Normalizer>> = vec![];
+        assert!(matches!(pick(&none, &source), Err(Error::Unsupported(_))));
     }
 }

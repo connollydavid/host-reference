@@ -193,10 +193,23 @@ pub fn count_tokens(text: &str) -> usize {
 /// The canonical, deterministic serialization of a `Tier0`, the form a conformance fixture pins and
 /// compares byte for byte. The spans are sorted by their source range, so the form is stable
 /// regardless of the order the normaliser built them in.
+/// Whether a line is one of the canonical-form section delimiters, the lines a consumer splits on.
+fn is_section_delimiter(line: &str) -> bool {
+    matches!(line, "== markdown ==" | "== source-map ==" | "== tokens ==")
+}
+
 pub fn serialize_tier0(t: &Tier0) -> String {
     let mut out = String::new();
     out.push_str("== markdown ==\n");
-    out.push_str(&t.markdown);
+    // Escape a body line that would collide with a section delimiter, so document content cannot
+    // inject a phantom section into the canonical form (finding 15). Benign content never matches a
+    // delimiter, so common output is byte-identical to a plain copy of the body.
+    for line in t.markdown.split_inclusive('\n') {
+        if is_section_delimiter(line.strip_suffix('\n').unwrap_or(line)) {
+            out.push('\\');
+        }
+        out.push_str(line);
+    }
     if !t.markdown.ends_with('\n') {
         out.push('\n');
     }
@@ -325,5 +338,24 @@ mod tests {
         assert!(matches!(r, Err(Error::Refused(_))));
         let ok: Result<u8, Error> = guard_panic("x", || Ok(7));
         assert_eq!(ok.unwrap(), 7);
+    }
+
+    #[test]
+    fn serialize_escapes_an_injected_section_delimiter() {
+        // finding 15: a body line that equals a delimiter is escaped, so a consumer that splits on
+        // delimiters cannot be fooled into reading a phantom section out of document content.
+        let t = Tier0 { markdown: "before\n== source-map ==\nafter".into(), ..Default::default() };
+        let s = serialize_tier0(&t);
+        assert!(s.contains("\\== source-map ==\n"), "the injected delimiter is escaped: {s}");
+        // The real source-map header is the only unescaped one.
+        assert_eq!(s.matches("\n== source-map ==\n").count(), 1);
+    }
+
+    #[test]
+    fn serialize_leaves_benign_body_unchanged() {
+        // A body with no delimiter line is copied verbatim, so existing goldens do not move.
+        let t = Tier0 { markdown: "# Heading\n\nsome prose\n".into(), ..Default::default() };
+        let s = serialize_tier0(&t);
+        assert!(s.starts_with("== markdown ==\n# Heading\n\nsome prose\n== source-map ==\n"));
     }
 }
