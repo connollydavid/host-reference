@@ -77,6 +77,19 @@ jobs:
           cargo install cargo-deny --locked
           cargo deny check licenses advisories
 
+  # The CLI registers each reader behind a Cargo feature; the build, test, and lint jobs above only
+  # compile the default (text) features, so a non-default reader's `reg.push` arm and its `use`
+  # imports are built by no other job (plan/0050 finding 12). Compile and lint the CLI with every
+  # reader feature so a rename in a heavy reader cannot break a consumer build unnoticed.
+  features:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the CLI with every reader feature
+        run: cargo build --locked -p host-reference --all-features
+      - name: clippy the CLI with every reader feature
+        run: cargo clippy --locked -p host-reference --all-features --all-targets -- -D warnings
+
   # The requirements lane (call/0030): the .allium spec must stay structurally sound and
   # free of process-level gaps.
   allium:
@@ -97,7 +110,7 @@ jobs:
   release:
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: [build, test, lint, allium]
+    needs: [build, test, lint, features, allium]
     permissions:
       contents: write
     steps:
