@@ -3,8 +3,8 @@
 //! map is whole-document for now. Scanned PDFs (image-only) belong to the recognition path, not here.
 
 use host_reference_core::{
-    content_id, count_tokens, Caps, Error, Modality, Normalizer, Semantic, Source, SourceMap, Span,
-    SpanSelector, Tier0, Tier1,
+    content_id, count_tokens, guard_panic, Caps, Error, Modality, Normalizer, Semantic, Source,
+    SourceMap, Span, SpanSelector, Tier0, Tier1,
 };
 use lopdf::{Document, Object};
 
@@ -39,8 +39,13 @@ impl Normalizer for PdfNormalizer {
 
     fn view(&self, source: &Source, _select: &SpanSelector) -> Result<Tier1, Error> {
         let id = content_id(source.bytes);
-        let text = pdf_extract::extract_text_from_mem(source.bytes)
-            .map_err(|e| Error::Parse(format!("pdf: {e}")))?;
+        // pdf-extract carries ~20 panic!/todo! sites for structures lopdf loads but it cannot
+        // handle; the guard turns that unwind into an explicit refusal instead of a process abort
+        // (finding 3, call/0031). The view's whole payload is the extracted text, so a panic refuses.
+        let text = guard_panic("pdf", || {
+            pdf_extract::extract_text_from_mem(source.bytes)
+                .map_err(|e| Error::Parse(format!("pdf: {e}")))
+        })?;
         Ok(Tier1 {
             markdown: text,
             source_map: SourceMap {
@@ -57,7 +62,13 @@ fn pdf_shape(bytes: &[u8]) -> Result<String, Error> {
         out.push_str(&format!("title: {title}\n"));
     }
     out.push_str(&format!("pages: {}\n", doc.get_pages().len()));
-    let text = pdf_extract::extract_text_from_mem(bytes).unwrap_or_default();
+    // The skeleton's load-bearing facts (title, page count) come from lopdf, which already parsed
+    // the document. The preview is best-effort: if pdf-extract panics on a structure it cannot
+    // handle, the guard degrades to an empty preview rather than aborting (finding 3).
+    let text = guard_panic("pdf preview", || {
+        Ok(pdf_extract::extract_text_from_mem(bytes).unwrap_or_default())
+    })
+    .unwrap_or_default();
     let preview: String =
         text.split_whitespace().collect::<Vec<_>>().join(" ").chars().take(120).collect();
     if !preview.is_empty() {
@@ -73,5 +84,19 @@ fn pdf_title(doc: &Document) -> Option<String> {
     };
     let dict = doc.get_object(info_id).ok()?.as_dict().ok()?;
     let title = dict.get(b"Title").ok()?.as_str().ok()?;
-    Some(String::from_utf8_lossy(title).to_string())
+    Some(decode_pdf_text(title))
+}
+
+/// Decode a PDF text string. A PDF string is UTF-16BE when it opens with the byte-order mark
+/// 0xFE 0xFF (a Word- or Acrobat-exported title is commonly UTF-16BE); otherwise it is
+/// PDFDocEncoding, approximated by a lossy UTF-8 read since ASCII is the common subset.
+fn decode_pdf_text(bytes: &[u8]) -> String {
+    match bytes.strip_prefix(&[0xFE, 0xFF]) {
+        Some(rest) => {
+            let units: Vec<u16> =
+                rest.chunks(2).map(|c| u16::from_be_bytes([c[0], *c.get(1).unwrap_or(&0)])).collect();
+            String::from_utf16_lossy(&units)
+        }
+        None => String::from_utf8_lossy(bytes).to_string(),
+    }
 }

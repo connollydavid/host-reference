@@ -136,8 +136,12 @@ fn parse_selector(s: &str) -> Result<SpanSelector, Error> {
         Ok(SpanSelector::Section(title.to_string()))
     } else if let Some(rest) = s.strip_prefix("offset:") {
         let (a, b) = rest.split_once(':').ok_or(Error::Parse("offset:<start>:<len>".into()))?;
-        let start = a.parse().map_err(|_| Error::Parse("offset start".into()))?;
-        let len = b.parse().map_err(|_| Error::Parse("offset len".into()))?;
+        let start: usize = a.parse().map_err(|_| Error::Parse("offset start".into()))?;
+        let len: usize = b.parse().map_err(|_| Error::Parse("offset len".into()))?;
+        // Reject a window whose end cannot be represented before the reader ever slices it
+        // (finding 1: an unbounded len overflowed `start + len` into a panic). A len merely larger
+        // than the document is fine; the reader clamps it via core::char_offset_window.
+        start.checked_add(len).ok_or(Error::Parse("offset start+len overflows".into()))?;
         Ok(SpanSelector::CharOffset { start, len })
     } else {
         Err(Error::Parse(format!("unknown selector {s:?}")))

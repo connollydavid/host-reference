@@ -33,16 +33,6 @@ fn heading_title(line: &str) -> &str {
     t[hashes + 1..].trim()
 }
 
-fn floor_boundary(text: &str, mut i: usize) -> usize {
-    if i > text.len() {
-        i = text.len();
-    }
-    while !text.is_char_boundary(i) {
-        i -= 1;
-    }
-    i
-}
-
 /// The byte range of the section a heading opens: from the heading to the next heading at the same
 /// or a higher level, or to the end of the document.
 fn section_range(text: &str, title: &str) -> Option<(usize, usize)> {
@@ -119,8 +109,7 @@ impl Normalizer for ProseNormalizer {
             SpanSelector::Section(title) => section_range(text, title)
                 .ok_or_else(|| Error::Parse(format!("no section titled {title:?}")))?,
             SpanSelector::CharOffset { start, len } => {
-                let s = floor_boundary(text, *start);
-                (s, floor_boundary(text, s + *len))
+                host_reference_core::char_offset_window(text, *start, *len)
             }
             _ => return Err(Error::Unsupported("view selector")),
         };
@@ -133,8 +122,8 @@ impl Normalizer for ProseNormalizer {
     fn put(&self, source: &Source, edit: &Edit) -> Result<Patch, Error> {
         // A well-behaved lens for UTF-8 text: replace the edited span and re-emit the bytes.
         let text = self.text(source)?;
-        let start = floor_boundary(text, edit.at.origin.start);
-        let end = floor_boundary(text, edit.at.origin.end.max(start));
+        let start = host_reference_core::floor_boundary(text, edit.at.origin.start);
+        let end = host_reference_core::floor_boundary(text, edit.at.origin.end.max(start));
         let mut out = String::with_capacity(text.len());
         out.push_str(&text[..start]);
         out.push_str(&edit.replacement);

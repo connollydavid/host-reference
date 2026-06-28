@@ -7,8 +7,8 @@
 use std::io::Cursor;
 
 use host_reference_core::{
-    content_id, count_tokens, Caps, Error, Modality, Normalizer, Semantic, Source, SourceMap, Span,
-    SpanSelector, Tier0, Tier1,
+    content_id, count_tokens, guard_panic, Caps, Error, Modality, Normalizer, Semantic, Source,
+    SourceMap, Span, SpanSelector, Tier0, Tier1,
 };
 use symphonia::core::formats::FormatOptions;
 use symphonia::core::io::MediaSourceStream;
@@ -59,7 +59,9 @@ impl Normalizer for AvNormalizer {
 
 fn shape(source: &Source) -> Result<String, Error> {
     match source.hint {
-        Some("mp4" | "mov" | "m4v" | "m4a") => mp4_shape(source.bytes),
+        // mp4 0.14 can under/overflow on a box whose declared size is smaller than its header or
+        // larger than the file; the guard turns that unwind into a refusal (call/0031).
+        Some("mp4" | "mov" | "m4v" | "m4a") => guard_panic("mp4", || mp4_shape(source.bytes)),
         _ => audio_shape(source.bytes, source.hint),
     }
 }
@@ -82,6 +84,22 @@ fn audio_shape(bytes: &[u8], ext: Option<&str>) -> Result<String, Error> {
         .get_codec(params.codec)
         .map(|d| d.short_name)
         .unwrap_or("unknown");
+    // An uncompressed PCM WAV declares its sample count in the data-chunk header; a bogus size
+    // (0xFFFFFFFF) would fabricate a duration the bytes cannot back. Refuse when the declared
+    // frames exceed what the file can hold. Gated to PCM, where one frame maps to a fixed byte
+    // count; a compressed codec has no such direct relation, so it is left alone (call/0031).
+    if codec.starts_with("pcm") {
+        if let (Some(frames), Some(bits), Some(channels)) =
+            (params.n_frames, params.bits_per_sample, params.channels)
+        {
+            let frame_bytes = u64::from(bits / 8) * channels.count() as u64;
+            if frame_bytes > 0 && frames > bytes.len() as u64 / frame_bytes {
+                return Err(Error::Refused(format!(
+                    "audio: declared {frames} frames exceed what the file can hold"
+                )));
+            }
+        }
+    }
     let mut out = format!("audio: {codec}");
     if let Some(rate) = params.sample_rate {
         out.push_str(&format!(", {rate} Hz"));

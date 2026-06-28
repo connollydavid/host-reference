@@ -50,6 +50,9 @@ impl Normalizer for OfficeNormalizer {
 }
 
 fn office_shape(bytes: &[u8]) -> Result<String, Error> {
+    // undoc's zip layer decompresses every part without a cap, so refuse a decompression bomb
+    // up front (finding 2 instance, call/0031).
+    host_reference_core::decompression_guard("office", bytes)?;
     let doc = parse_bytes(bytes).map_err(|e| Error::Parse(format!("office: {e}")))?;
     let mut out = String::new();
     if let Some(title) = doc.metadata.title.as_deref() {

@@ -52,6 +52,9 @@ impl Normalizer for EpubNormalizer {
 }
 
 fn epub_outline(bytes: &[u8]) -> Result<String, Error> {
+    // rbook's zip layer decompresses without a cap; refuse a decompression bomb up front
+    // (finding 2 instance, call/0031).
+    host_reference_core::decompression_guard("epub", bytes)?;
     let epub = Epub::read(Cursor::new(bytes.to_vec())).map_err(|e| Error::Parse(format!("epub: {e}")))?;
     let mut out = String::new();
     if let Some(title) = epub.metadata().title() {

@@ -14,16 +14,6 @@ use host_reference_core::{
 
 pub struct SpiceNormalizer;
 
-fn floor_boundary(text: &str, mut i: usize) -> usize {
-    if i > text.len() {
-        i = text.len();
-    }
-    while !text.is_char_boundary(i) {
-        i -= 1;
-    }
-    i
-}
-
 impl SpiceNormalizer {
     fn text<'a>(&self, source: &Source<'a>) -> Result<&'a str, Error> {
         std::str::from_utf8(source.bytes).map_err(|e| Error::Parse(format!("not UTF-8: {e}")))
@@ -106,8 +96,7 @@ impl Normalizer for SpiceNormalizer {
         let id = content_id(source.bytes);
         let (start, end) = match select {
             SpanSelector::CharOffset { start, len } => {
-                let s = floor_boundary(text, *start);
-                (s, floor_boundary(text, s + *len))
+                host_reference_core::char_offset_window(text, *start, *len)
             }
             _ => (0, text.len()),
         };

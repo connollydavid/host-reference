@@ -33,8 +33,8 @@ impl Normalizer for CalendarNormalizer {
         let text = self.text(source)?;
         let id = content_id(source.bytes);
         let outline = match source.hint {
-            Some("vcf" | "vcard") => vcard_shape(text),
-            _ => calendar_shape(text),
+            Some("vcf" | "vcard") => vcard_shape(text)?,
+            _ => calendar_shape(text)?,
         };
         Ok(Tier0 {
             raw_tokens: count_tokens(text),
@@ -51,8 +51,7 @@ impl Normalizer for CalendarNormalizer {
         let id = content_id(source.bytes);
         let (start, end) = match select {
             SpanSelector::CharOffset { start, len } => {
-                let s = floor_boundary(text, *start);
-                (s, floor_boundary(text, s + *len))
+                host_reference_core::char_offset_window(text, *start, *len)
             }
             _ => (0, text.len()),
         };
@@ -63,34 +62,44 @@ impl Normalizer for CalendarNormalizer {
     }
 }
 
-fn floor_boundary(text: &str, mut i: usize) -> usize {
-    if i > text.len() {
-        i = text.len();
-    }
-    while !text.is_char_boundary(i) {
-        i -= 1;
-    }
-    i
-}
-
-fn parse_entries(text: &str) -> Vec<Entry> {
+/// Parse the input into entries, refusing on any malformed entry. calcard reports a malformed
+/// line or an unbalanced component as an error `Entry`; dropping those (the old behaviour) let a
+/// truncated or garbage `.ics` return a silent `0 components`. call/0031 forbids that silent
+/// partial, so an error entry becomes an explicit `Error::Refused` (finding 4).
+fn parse_entries(text: &str) -> Result<Vec<Entry>, Error> {
     let mut parser = Parser::new(text);
     let mut out = Vec::new();
     loop {
-        let e = parser.entry();
-        if matches!(e, Entry::Eof) {
-            break;
+        match parser.entry() {
+            Entry::Eof => break,
+            e @ (Entry::ICalendar(_) | Entry::VCard(_)) => out.push(e),
+            Entry::InvalidLine(line) => {
+                return Err(Error::Refused(format!("calendar: invalid line: {line}")))
+            }
+            Entry::UnterminatedComponent(c) => {
+                return Err(Error::Refused(format!("calendar: unterminated component: {c}")))
+            }
+            Entry::UnexpectedComponentEnd { expected, found } => {
+                return Err(Error::Refused(format!(
+                    "calendar: unexpected component end (expected {expected:?}, found {found:?})"
+                )))
+            }
+            Entry::TooManyComponents => {
+                return Err(Error::Refused("calendar: too many components".into()))
+            }
+            // calcard's Entry is non_exhaustive; refuse an unrecognised variant rather than
+            // drop it, the fail-safe default (call/0031).
+            _ => return Err(Error::Refused("calendar: unrecognised parser entry".into())),
         }
-        out.push(e);
     }
-    out
+    Ok(out)
 }
 
 /// The component tally of every VCALENDAR in the input, ordered by kind.
-fn calendar_shape(text: &str) -> String {
+fn calendar_shape(text: &str) -> Result<String, Error> {
     let mut tally: Vec<(String, usize)> = Vec::new();
     let mut total = 0usize;
-    for e in parse_entries(text) {
+    for e in parse_entries(text)? {
         if let Entry::ICalendar(ical) = e {
             for c in &ical.components {
                 total += 1;
@@ -111,14 +120,14 @@ fn calendar_shape(text: &str) -> String {
             out.push_str(&format!("- {kind}\n"));
         }
     }
-    out
+    Ok(out)
 }
 
 /// The card count, with the union of property names the cards carry (their shape).
-fn vcard_shape(text: &str) -> String {
+fn vcard_shape(text: &str) -> Result<String, Error> {
     let mut count = 0usize;
     let mut props: Vec<String> = Vec::new();
-    for e in parse_entries(text) {
+    for e in parse_entries(text)? {
         if let Entry::VCard(v) = e {
             count += 1;
             for entry in &v.entries {
@@ -134,5 +143,5 @@ fn vcard_shape(text: &str) -> String {
     for p in props {
         out.push_str(&format!("- {p}\n"));
     }
-    out
+    Ok(out)
 }

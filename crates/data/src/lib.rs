@@ -71,8 +71,7 @@ impl Normalizer for DataNormalizer {
         let id = content_id(source.bytes);
         let (start, end) = match select {
             SpanSelector::CharOffset { start, len } => {
-                let s = floor_boundary(text, *start);
-                (s, floor_boundary(text, s + *len))
+                host_reference_core::char_offset_window(text, *start, *len)
             }
             // Other selectors return the whole document until a span-preserving parser lands.
             _ => (0, text.len()),
@@ -85,24 +84,14 @@ impl Normalizer for DataNormalizer {
 
     fn put(&self, source: &Source, edit: &Edit) -> Result<Patch, Error> {
         let text = self.text(source)?;
-        let start = floor_boundary(text, edit.at.origin.start);
-        let end = floor_boundary(text, edit.at.origin.end.max(start));
+        let start = host_reference_core::floor_boundary(text, edit.at.origin.start);
+        let end = host_reference_core::floor_boundary(text, edit.at.origin.end.max(start));
         let mut out = String::with_capacity(text.len());
         out.push_str(&text[..start]);
         out.push_str(&edit.replacement);
         out.push_str(&text[end..]);
         Ok(Patch { bytes: out.into_bytes() })
     }
-}
-
-fn floor_boundary(text: &str, mut i: usize) -> usize {
-    if i > text.len() {
-        i = text.len();
-    }
-    while !text.is_char_boundary(i) {
-        i -= 1;
-    }
-    i
 }
 
 fn type_name(v: &Value) -> &'static str {

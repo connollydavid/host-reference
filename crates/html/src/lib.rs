@@ -24,16 +24,6 @@ impl HtmlNormalizer {
     }
 }
 
-fn floor_boundary(text: &str, mut i: usize) -> usize {
-    if i > text.len() {
-        i = text.len();
-    }
-    while !text.is_char_boundary(i) {
-        i -= 1;
-    }
-    i
-}
-
 /// The heading outline of markdown: each ATX heading as an indented bullet.
 fn heading_outline(md: &str) -> String {
     let mut out = String::new();
@@ -88,8 +78,7 @@ impl Normalizer for HtmlNormalizer {
         let id = content_id(source.bytes);
         let (start, end) = match select {
             SpanSelector::CharOffset { start, len } => {
-                let s = floor_boundary(&md, *start);
-                (s, floor_boundary(&md, s + *len))
+                host_reference_core::char_offset_window(&md, *start, *len)
             }
             _ => (0, md.len()),
         };

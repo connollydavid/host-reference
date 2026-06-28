@@ -216,6 +216,76 @@ pub fn serialize_tier0(t: &Tier0) -> String {
     out
 }
 
+/// The largest char boundary at or before `i`, clamped to the text length. Slicing a `&str` at a
+/// non-boundary or out-of-range index panics, so every computed offset passes through here first.
+/// Shared so the text readers cannot each drift their own copy.
+pub fn floor_boundary(text: &str, mut i: usize) -> usize {
+    if i > text.len() {
+        i = text.len();
+    }
+    while !text.is_char_boundary(i) {
+        i -= 1;
+    }
+    i
+}
+
+/// The byte range of a character-offset window into `text`, clamped to char boundaries and
+/// saturating, so an oversized or overflowing length can never panic the slice. This is the
+/// finding-1 fix: the `start + len` sum that the per-reader `CharOffset` arms computed before
+/// clamping overflowed on a hostile `len`. The returned range satisfies `start <= end <= text.len()`
+/// with both ends on char boundaries (call/0031).
+pub fn char_offset_window(text: &str, start: usize, len: usize) -> (usize, usize) {
+    let s = floor_boundary(text, start);
+    let e = floor_boundary(text, s.saturating_add(len));
+    (s, e)
+}
+
+/// Run a parser that may panic on a hostile structure, converting an unwind into an explicit
+/// refusal. Third-party parsers (pdf-extract, mp4) carry `panic!`/`todo!` sites for inputs they
+/// load but cannot handle; call/0031 forbids a process abort on untrusted input, so the panic
+/// becomes `Error::Refused`. The underlying panic may still reach the default hook on stderr.
+pub fn guard_panic<T>(what: &str, f: impl FnOnce() -> Result<T, Error>) -> Result<T, Error> {
+    match std::panic::catch_unwind(std::panic::AssertUnwindSafe(f)) {
+        Ok(r) => r,
+        Err(_) => Err(Error::Refused(format!("{what}: parser panicked on hostile input"))),
+    }
+}
+
+/// The decompression bounds for archive-backed readers (office, EPUB). A small archive whose
+/// declared expansion exceeds either bound is a decompression bomb and is refused rather than
+/// extracted (call/0031: a cap on decompressed size with a compression-ratio limit).
+pub const MAX_DECOMPRESSED_BYTES: u64 = 512 * 1024 * 1024;
+/// The ceiling on declared-uncompressed over compressed size for an archive.
+pub const MAX_COMPRESSION_RATIO: u64 = 200;
+
+/// Refuse a decompression bomb before an archive reader expands it. The zip central directory
+/// carries each entry's declared compressed and uncompressed sizes; summing them is cheap (no
+/// decompression) and catches the classic deflate bomb, which declares gigabytes of output from a
+/// tiny archive. A zip that understates its declared sizes is a residual the upstream decompressor
+/// would still meet; this is the legible, in-scope bound call/0031 requires. Behind the `archive`
+/// feature so the text-only build carries no zip dependency.
+#[cfg(feature = "archive")]
+pub fn decompression_guard(what: &str, bytes: &[u8]) -> Result<(), Error> {
+    let mut archive = zip::ZipArchive::new(std::io::Cursor::new(bytes))
+        .map_err(|e| Error::Parse(format!("{what}: not a zip: {e}")))?;
+    let mut uncompressed: u64 = 0;
+    let mut compressed: u64 = 0;
+    for i in 0..archive.len() {
+        let entry = archive.by_index_raw(i).map_err(|e| Error::Parse(format!("{what}: {e}")))?;
+        uncompressed = uncompressed.saturating_add(entry.size());
+        compressed = compressed.saturating_add(entry.compressed_size());
+    }
+    if uncompressed > MAX_DECOMPRESSED_BYTES {
+        return Err(Error::Refused(format!(
+            "{what}: declared {uncompressed} decompressed bytes exceeds the cap"
+        )));
+    }
+    if compressed > 0 && uncompressed / compressed > MAX_COMPRESSION_RATIO {
+        return Err(Error::Refused(format!("{what}: declared compression ratio exceeds the cap")));
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -227,5 +297,33 @@ mod tests {
         assert!(!c.write_back);
         assert_eq!(c.semantic, Semantic::None);
         assert!(!c.ocr);
+    }
+
+    #[test]
+    fn char_offset_window_saturates_instead_of_overflowing() {
+        let text = "hello";
+        // the finding-1 trigger: an oversized len clamps to the end rather than overflowing.
+        assert_eq!(char_offset_window(text, 1, usize::MAX), (1, 5));
+        // a start past the end clamps to the end, an empty window.
+        assert_eq!(char_offset_window(text, 99, 10), (5, 5));
+        // an ordinary window is unchanged.
+        assert_eq!(char_offset_window(text, 1, 3), (1, 4));
+    }
+
+    #[test]
+    fn char_offset_window_floors_to_char_boundary() {
+        let text = "café"; // 'é' occupies bytes 3..5
+        // a start inside the multibyte char floors down to a boundary.
+        assert_eq!(char_offset_window(text, 4, 0), (3, 3));
+        // an end inside the multibyte char floors down too.
+        assert_eq!(char_offset_window(text, 0, 4), (0, 3));
+    }
+
+    #[test]
+    fn guard_panic_converts_unwind_to_refused() {
+        let r: Result<(), Error> = guard_panic("x", || panic!("boom"));
+        assert!(matches!(r, Err(Error::Refused(_))));
+        let ok: Result<u8, Error> = guard_panic("x", || Ok(7));
+        assert_eq!(ok.unwrap(), 7);
     }
 }

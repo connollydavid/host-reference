@@ -8,3 +8,9 @@ license.workspace = true
 [dependencies]
 sha2 = "0.11.0"
 tiktoken-rs = "0.12.0"
+# Only the archive-backed readers (office, EPUB) need the zip central-directory scan; gated so the
+# text-only canonical binary carries no zip dependency.
+zip = { version = "2", default-features = false, features = ["deflate"], optional = true }
+
+[features]
+archive = ["dep:zip"]

@@ -6,7 +6,7 @@ edition.workspace = true
 license.workspace = true
 
 [dependencies]
-host-reference-core = { path = "../core" }
+host-reference-core = { path = "../core", features = ["archive"] }
 undoc = "0.5"
 
 [dev-dependencies]

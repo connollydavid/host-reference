@@ -47,8 +47,7 @@ impl Normalizer for OrgNormalizer {
         let id = content_id(source.bytes);
         let (start, end) = match select {
             SpanSelector::CharOffset { start, len } => {
-                let s = floor_boundary(text, *start);
-                (s, floor_boundary(text, s + *len))
+                host_reference_core::char_offset_window(text, *start, *len)
             }
             _ => (0, text.len()),
         };
@@ -57,16 +56,6 @@ impl Normalizer for OrgNormalizer {
             source_map: SourceMap { spans: vec![Span { source: id, origin: start..end }] },
         })
     }
-}
-
-fn floor_boundary(text: &str, mut i: usize) -> usize {
-    if i > text.len() {
-        i = text.len();
-    }
-    while !text.is_char_boundary(i) {
-        i -= 1;
-    }
-    i
 }
 
 fn org_shape(text: &str) -> String {
