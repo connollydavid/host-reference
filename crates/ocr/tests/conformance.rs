@@ -1,30 +1,32 @@
-//! Conformance for the OCR normaliser. Unlike the in-process readers it drives the out-of-process
-//! helper, so the test makes sure the helper binary is built and points the plugin at it through the
-//! same environment variable a real deployment uses. Never auto-blessed; set `HOST_REFERENCE_BLESS=1`
-//! to rewrite a golden deliberately.
+//! Conformance for the OCR normaliser. The real engine lives out-of-process in the separate
+//! `host-reference-ocr` repo and is conformance-tested there; this crate is permissive and carries no
+//! engine. So the plugin's own contract, the out-of-process plumbing and the skeleton formatting, is
+//! tested against a stub helper that emits fixed recognised text. The stub asserts it received a real
+//! image path, so the test still proves the plugin stages the image and runs the helper at arm's
+//! length. Never auto-blessed; set `HOST_REFERENCE_BLESS=1` to rewrite a golden deliberately.
 
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::process::Command;
 
 use host_reference_core::{serialize_tier0, Normalizer, Source};
 use host_reference_ocr::OcrNormalizer;
 
-fn ensure_helper() -> PathBuf {
-    let helper = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("../../target/debug/host-reference-ocr-helper");
-    if !helper.exists() {
-        let status = Command::new(env!("CARGO"))
-            .args(["build", "-p", "host-reference-ocr-helper"])
-            .status()
-            .expect("run cargo build for the ocr helper");
-        assert!(status.success(), "ocr helper build failed");
+/// Write a stub helper that stands in for `host-reference-ocr-helper`: it checks an image path was
+/// passed and prints fixed recognised text, so the plugin's plumbing is exercised without the engine.
+fn write_stub() -> PathBuf {
+    let stub = std::env::temp_dir().join("host-reference-ocr-stub.sh");
+    fs::write(&stub, "#!/bin/sh\n[ -f \"$1\" ] || { echo 'stub: no image' >&2; exit 1; }\necho 'HELLO WORLD'\n")
+        .expect("write stub helper");
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        fs::set_permissions(&stub, fs::Permissions::from_mode(0o755)).expect("chmod stub");
     }
-    helper.canonicalize().unwrap_or(helper)
+    stub
 }
 
 fn check(dir: &str, input: &str, hint: &str) {
-    std::env::set_var("HOST_REFERENCE_OCR_HELPER", ensure_helper());
+    std::env::set_var("HOST_REFERENCE_OCR_HELPER", write_stub());
     let base = Path::new(env!("CARGO_MANIFEST_DIR")).join("fixtures").join(dir);
     let bytes = fs::read(base.join(input)).expect("read fixture input");
     let tier0 = OcrNormalizer
@@ -43,6 +45,6 @@ fn check(dir: &str, input: &str, hint: &str) {
 }
 
 #[test]
-fn scan_hello_world_shape() {
+fn scan_formats_helper_text() {
     check("scan", "input.png", "png");
 }
