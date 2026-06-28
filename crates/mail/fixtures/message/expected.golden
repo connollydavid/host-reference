@@ -1,0 +1,10 @@
+== markdown ==
+subject: Project update
+from: alice@example.com
+to: bob@example.com
+date: 2026-06-01T10:00:00Z
+attachments: 0
+== source-map ==
+6f8970f1eff2:0-221
+== tokens ==
+raw=66 normalised=39

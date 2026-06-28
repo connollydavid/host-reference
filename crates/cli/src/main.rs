@@ -19,6 +19,8 @@ use host_reference_config::ConfigNormalizer;
 use host_reference_epub::EpubNormalizer;
 #[cfg(feature = "office")]
 use host_reference_office::OfficeNormalizer;
+#[cfg(feature = "mail")]
+use host_reference_mail::MailNormalizer;
 #[cfg(feature = "data")]
 use host_reference_data::DataNormalizer;
 #[cfg(feature = "html")]
@@ -65,6 +67,8 @@ fn registry() -> Vec<Box<dyn Normalizer>> {
     reg.push(Box::new(EpubNormalizer));
     #[cfg(feature = "office")]
     reg.push(Box::new(OfficeNormalizer));
+    #[cfg(feature = "mail")]
+    reg.push(Box::new(MailNormalizer));
     #[cfg(feature = "html")]
     reg.push(Box::new(HtmlNormalizer));
     #[cfg(feature = "vector")]

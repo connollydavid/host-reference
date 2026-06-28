@@ -812,6 +812,7 @@ dependencies = [
  "host-reference-data",
  "host-reference-epub",
  "host-reference-html",
+ "host-reference-mail",
  "host-reference-netlist",
  "host-reference-office",
  "host-reference-org",
@@ -902,6 +903,14 @@ version = "0.1.0"
 dependencies = [
  "host-reference-core",
  "htmd",
+]
+
+[[package]]
+name = "host-reference-mail"
+version = "0.1.0"
+dependencies = [
+ "host-reference-core",
+ "mail-parser",
 ]
 
 [[package]]
