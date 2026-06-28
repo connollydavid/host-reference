@@ -20,6 +20,7 @@ pub enum Modality {
     Mail,
     EngineeringEda,
     EngineeringGeometry,
+    AudioVisual,
 }
 
 /// How fully a normaliser preserves structural roles.
