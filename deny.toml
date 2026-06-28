@@ -15,6 +15,7 @@ confidence-threshold = 0.9
 # The wider permissive set (the BSD pair, MPL-2.0, 0BSD, and the rest) joins on
 # first use.
 allow = [
+    "0BSD",
     "Apache-2.0",
     "BSD-2-Clause",
     "BSD-3-Clause",
@@ -36,6 +37,11 @@ ignore = [
     # marked it unmaintained (RUSTSEC-2024-0436), but there is no vulnerability and no safe upgrade,
     # so this informational advisory is accepted rather than failing the lane.
     "RUSTSEC-2024-0436",
+    # proc-macro-error is a build-time proc-macro helper pulled transitively by ruststep-derive (the
+    # STEP reader). Its author marked it unmaintained (RUSTSEC-2024-0370), but there is no
+    # vulnerability and no safe upgrade through ruststep, so it is accepted on the same footing as
+    # paste above.
+    "RUSTSEC-2024-0370",
 ]
 
 [bans]

@@ -22,7 +22,13 @@ impl Normalizer for GeometryNormalizer {
     }
 
     fn detect(&self, source: &Source) -> bool {
-        matches!(source.hint, Some("stl" | "gltf" | "glb" | "dxf" | "obj" | "ply" | "gcode" | "nc"))
+        matches!(
+            source.hint,
+            Some(
+                "stl" | "gltf" | "glb" | "dxf" | "obj" | "ply" | "gcode" | "nc" | "3mf" | "amf"
+                    | "step" | "stp"
+            )
+        )
     }
 
     fn skeleton(&self, source: &Source) -> Result<Tier0, Error> {
@@ -57,6 +63,9 @@ fn shape(source: &Source) -> Result<String, Error> {
         Some("obj") => obj_shape(source.bytes),
         Some("ply") => ply_shape(source.bytes),
         Some("gcode" | "nc") => gcode_shape(source.bytes),
+        Some("3mf") => threemf_shape(source.bytes),
+        Some("amf") => amf_shape(source.bytes),
+        Some("step" | "stp") => step_shape(source.bytes),
         _ => stl_shape(source.bytes),
     }
 }
@@ -90,6 +99,75 @@ fn gcode_shape(bytes: &[u8]) -> Result<String, Error> {
     let program = gcode::parse(text).map_err(|e| Error::Parse(format!("gcode: {e:?}")))?;
     let commands: usize = program.blocks.iter().map(|b| b.codes.len()).sum();
     Ok(format!("gcode: {} blocks, {commands} commands\n", program.blocks.len()))
+}
+
+fn threemf_shape(bytes: &[u8]) -> Result<String, Error> {
+    let models =
+        threemf::read(Cursor::new(bytes)).map_err(|e| Error::Parse(format!("3mf: {e:?}")))?;
+    let mut meshes = 0usize;
+    let mut vertices = 0usize;
+    let mut triangles = 0usize;
+    for model in &models {
+        for object in &model.resources.object {
+            if let Some(mesh) = &object.mesh {
+                meshes += 1;
+                vertices += mesh.vertices.vertex.len();
+                triangles += mesh.triangles.triangle.len();
+            }
+        }
+    }
+    Ok(format!("3mf: {meshes} meshes, {vertices} vertices, {triangles} triangles\n"))
+}
+
+fn amf_shape(bytes: &[u8]) -> Result<String, Error> {
+    if bytes.starts_with(b"PK") {
+        return Err(Error::Unsupported(
+            "compressed AMF (zip) is not yet supported; uncompressed AMF only",
+        ));
+    }
+    let text = std::str::from_utf8(bytes).map_err(|e| Error::Parse(format!("amf: {e}")))?;
+    let doc = roxmltree::Document::parse(text).map_err(|e| Error::Parse(format!("amf: {e}")))?;
+    let count = |name: &str| {
+        doc.descendants().filter(|n| n.is_element() && n.tag_name().name() == name).count()
+    };
+    Ok(format!(
+        "amf: {} objects, {} meshes, {} vertices, {} triangles\n",
+        count("object"),
+        count("mesh"),
+        count("vertex"),
+        count("triangle")
+    ))
+}
+
+fn step_shape(bytes: &[u8]) -> Result<String, Error> {
+    let text = std::str::from_utf8(bytes).map_err(|e| Error::Parse(format!("step: {e}")))?;
+    let (_, exchange) = ruststep::parser::exchange::exchange_file(text)
+        .map_err(|e| Error::Parse(format!("step: {e:?}")))?;
+    let mut tally: Vec<(String, usize)> = Vec::new();
+    let mut total = 0usize;
+    for section in &exchange.data {
+        for entity in &section.entities {
+            total += 1;
+            let name = match entity {
+                ruststep::ast::EntityInstance::Simple { record, .. } => record.name.clone(),
+                ruststep::ast::EntityInstance::Complex { .. } => "Complex".to_string(),
+            };
+            match tally.iter_mut().find(|(k, _)| *k == name) {
+                Some(t) => t.1 += 1,
+                None => tally.push((name, 1)),
+            }
+        }
+    }
+    tally.sort();
+    let mut out = format!("step: {total} entities\n");
+    for (kind, count) in tally {
+        if count > 1 {
+            out.push_str(&format!("- {kind} (x{count})\n"));
+        } else {
+            out.push_str(&format!("- {kind}\n"));
+        }
+    }
+    Ok(out)
 }
 
 fn stl_shape(bytes: &[u8]) -> Result<String, Error> {

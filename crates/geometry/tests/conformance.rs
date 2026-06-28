@@ -54,3 +54,18 @@ fn ply_points_shape() {
 fn gcode_toolpath_shape() {
     check("toolpath", "input.gcode", "gcode");
 }
+
+#[test]
+fn threemf_print_shape() {
+    check("print", "input.3mf", "3mf");
+}
+
+#[test]
+fn amf_additive_shape() {
+    check("additive", "input.amf", "amf");
+}
+
+#[test]
+fn step_exchange_shape() {
+    check("exchange", "input.step", "step");
+}
