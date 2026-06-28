@@ -21,6 +21,7 @@ allow = [
     "MIT",
     "Unicode-3.0",
     "Unlicense",
+    "Zlib",
 ]
 # No GPL exception yet. A GPL crate is added here by name to flag it; AGPL never is.
 #   exceptions = [{ name = "the-openscad-helper", allow = ["GPL-3.0-or-later"] }]
