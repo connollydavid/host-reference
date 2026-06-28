@@ -25,6 +25,7 @@ host-reference-org = { path = "../org", optional = true }
 host-reference-asciidoc = { path = "../asciidoc", optional = true }
 host-reference-rtf = { path = "../rtf", optional = true }
 host-reference-epub = { path = "../epub", optional = true }
+host-reference-office = { path = "../office", optional = true }
 
 # Each reader is a plugin behind a feature (call/0033). The default carries the
 # text-cheap readers, which are light. Heavier readers (office, fixed-layout,
@@ -44,6 +45,7 @@ org = ["dep:host-reference-org"]
 asciidoc = ["dep:host-reference-asciidoc"]
 rtf = ["dep:host-reference-rtf"]
 epub = ["dep:host-reference-epub"]
+office = ["dep:host-reference-office"]
 html = ["dep:host-reference-html"]
 vector = ["dep:host-reference-vector"]
 netlist = ["dep:host-reference-netlist"]

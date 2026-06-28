@@ -1,0 +1,14 @@
+[package]
+name = "host-reference-office"
+description = "host-reference office normaliser: DOCX, PPTX, and XLSX via undoc"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+host-reference-core = { path = "../core" }
+undoc = "0.5"
+
+[dev-dependencies]
+# The conformance test builds minimal OOXML zips in memory rather than committing binaries.
+zip = { version = "2", default-features = false, features = ["deflate"] }
