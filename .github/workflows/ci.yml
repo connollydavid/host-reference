@@ -89,6 +89,10 @@ jobs:
         run: allium check host-reference.allium
       - name: allium analyse
         run: allium analyse host-reference.allium
+      - name: Install host-lifecycle (pinned)
+        run: cargo install --git https://github.com/connollydavid/host-lifecycle --rev 3958b6248eaf3e7ad6b017fc597cd7e30f17a59b
+      - name: Obligations (every spec obligation dispositioned, test names real)
+        run: host-lifecycle obligations host-reference.allium --tests crates/core/tests
 
   release:
     runs-on: ubuntu-latest

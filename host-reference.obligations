@@ -1,0 +1,62 @@
+# host-reference.obligations — disposition for every `allium plan` obligation.
+# `host-lifecycle obligations host-reference.allium --tests crates/core/tests` checks this is
+# complete (no obligation undispositioned, no stale entry, every test: name real).
+#   <id> => structural | test:<name> | waived: <reason>
+# structural = the spec's own `allium check`/`analyse` lane discharges it (config defaults, field
+# presence, enum comparability, surface shape).
+# test:<name> = a named contract test in crates/core/tests/contract.rs discharges it at the trait
+# level; the per-format conformance fixtures and the overlay lens-law proptests cover the instances.
+
+# --- Spec-integrity (covered by the check/analyse lane) ---
+config-default.default_round_trip          => structural
+config-default.default_write_back          => structural
+enum-comparable.Semantic                   => structural
+enum-comparable.Layer                      => structural
+enum-comparable.RefusalKind                => structural
+entity-fields.Consumer                     => structural
+entity-fields.Source                       => structural
+entity-fields.Caps                         => structural
+entity-fields.Reader                       => structural
+entity-fields.Span                         => structural
+entity-fields.Skeleton                     => structural
+entity-fields.View                         => structural
+entity-fields.Selector                     => structural
+entity-fields.Annotation                   => structural
+entity-fields.Patch                        => structural
+entity-fields.Refusal                      => structural
+surface-actor.Compile                      => structural
+surface-provides.Compile                   => structural
+
+# --- The Normalizer-contract rules (behavioural — named contract tests) ---
+rule-success.Normalise                     => test:normalise_yields_attested_skeleton
+rule-failure.Normalise.1                   => test:normalise_requires_a_format_hint
+rule-entity-creation.Normalise.1           => test:normalise_yields_attested_skeleton
+rule-success.Window                        => test:window_yields_a_slice
+rule-failure.Window.1                      => test:window_refuses_an_unsupported_selector
+rule-entity-creation.Window.1              => test:window_yields_a_slice
+rule-success.WriteBack                     => test:write_back_produces_a_patch
+rule-failure.WriteBack.1                   => test:write_back_refused_without_the_capability
+rule-entity-creation.WriteBack.1           => test:write_back_produces_a_patch
+rule-success.WriteBackRefused              => test:write_back_refused_without_the_capability
+rule-failure.WriteBackRefused.1            => test:write_back_produces_a_patch
+rule-entity-creation.WriteBackRefused.1    => test:write_back_refused_without_the_capability
+
+# --- Overlay and recognition rules (realised outside the Normalizer trait) ---
+# Annotate is the overlay layer (the host-reference-overlay crate), proven by its
+# annotate_export_import_roundtrips test; it is not a Normalizer-trait behaviour.
+rule-success.Annotate                      => waived: the overlay crate discharges this (annotate_export_import_roundtrips); it is not a Normalizer-trait rule
+rule-entity-creation.Annotate.1            => waived: the overlay crate discharges this (annotate_export_import_roundtrips); it is not a Normalizer-trait rule
+# The recognition split is architectural (call/0034): the deterministic engine is the attested
+# out-of-process OCR reader, the non-deterministic adapter is the overlay transcription path. There is
+# no single trait method to test; the split is realised across host-reference-ocr and the overlay.
+rule-success.RecogniseAttested             => waived: realised by the attested out-of-process OCR reader (call/0034), not a single trait method
+rule-failure.RecogniseAttested.1           => waived: realised by the attested out-of-process OCR reader (call/0034), not a single trait method
+rule-entity-creation.RecogniseAttested.1   => waived: realised by the attested out-of-process OCR reader (call/0034), not a single trait method
+rule-success.RecogniseOverlay              => waived: the non-deterministic transcription adapter rides the overlay (call/0030), not a single trait method
+rule-failure.RecogniseOverlay.1            => waived: the non-deterministic transcription adapter rides the overlay (call/0030), not a single trait method
+rule-entity-creation.RecogniseOverlay.1    => waived: the non-deterministic transcription adapter rides the overlay (call/0030), not a single trait method
+# Hostile-input refusal is the call/0031 fail-safe, realised per reader where a resource bound or a
+# malformed structure is hit (Error::Refused); it is a cross-cutting guarantee, not one trait method.
+rule-success.RefuseHostileInput            => waived: the call/0031 fail-safe, realised per reader as Error::Refused where a bound is hit
+rule-failure.RefuseHostileInput.1          => waived: the call/0031 fail-safe, realised per reader as Error::Refused where a bound is hit
+rule-entity-creation.RefuseHostileInput.1  => waived: the call/0031 fail-safe, realised per reader as Error::Refused where a bound is hit
