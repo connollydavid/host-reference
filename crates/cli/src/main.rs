@@ -54,6 +54,8 @@ use host_reference_vector::SvgNormalizer;
 
 // Each enabled reader feature registers its normaliser; a build with none compiles
 // to an empty registry and reports every kind as unsupported.
+// The registry is built by cfg-gated pushes, so it cannot be a `vec!` literal.
+#[allow(clippy::vec_init_then_push)]
 fn registry() -> Vec<Box<dyn Normalizer>> {
     #[allow(unused_mut)]
     let mut reg: Vec<Box<dyn Normalizer>> = Vec::new();

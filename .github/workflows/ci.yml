@@ -1,0 +1,109 @@
+name: CI
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+on:
+  push:
+    branches: [main]
+    # semver release tags only — a bare `v*` also matches the `vendor-vN` bundle
+    # tags this repo publishes, which would fire the release job on a bundle tag.
+    tags: ["v[0-9]+.[0-9]+.[0-9]+"]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # The canonical CLI binary, built with default (text) features. The heavy readers are
+  # opt-in and out of the canonical artifact, matching the other components' single binary.
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-musl
+            name: host-reference-linux-amd64
+          - os: ubuntu-24.04-arm
+            target: aarch64-unknown-linux-musl
+            name: host-reference-linux-arm64
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            name: host-reference-darwin-amd64
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            name: host-reference-darwin-arm64
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            name: host-reference-windows-amd64.exe
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install musl toolchain
+        if: contains(matrix.target, 'musl')
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y musl-tools
+      - name: Add target
+        run: rustup target add ${{ matrix.target }}
+      - name: Build the canonical binary (default features)
+        run: cargo build --release --locked -p host-reference --target ${{ matrix.target }}
+      - name: Stage binary
+        shell: bash
+        run: |
+          bin="target/${{ matrix.target }}/release/host-reference"
+          [ -f "$bin.exe" ] && bin="$bin.exe"
+          cp "$bin" "${{ matrix.name }}"
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.name }}
+          path: ${{ matrix.name }}
+
+  # The conformance fixtures and the overlay lens-law proptests, across the whole workspace.
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: cargo test (conformance fixtures + lens-law proptests)
+        run: cargo test --workspace --locked
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: clippy
+        run: cargo clippy --workspace --all-targets -- -D warnings
+      - name: cargo-deny (licences and advisories)
+        run: |
+          cargo install cargo-deny --locked
+          cargo deny check licenses advisories
+
+  # The requirements lane (call/0030): the .allium spec must stay structurally sound and
+  # free of process-level gaps.
+  allium:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install allium-cli (pinned 3.4.2)
+        run: cargo install allium-cli --version 3.4.2
+      - name: allium check
+        run: allium check host-reference.allium
+      - name: allium analyse
+        run: allium analyse host-reference.allium
+
+  release:
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [build, test, lint, allium]
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download all binaries
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*

@@ -1,0 +1,200 @@
+-- allium: 3
+-- host-reference.allium
+--
+-- host-reference: a reference compiler that normalises external documentation into a
+-- token-lean, attestable form. This spec captures the observable two-layer contract of
+-- agentic-host call/0030, call/0031, and call/0032: the immutable normalised layer a
+-- reader derives deterministically, and the mutable overlay anchored to it by standard
+-- selectors. The per-format parsers, the reference tokenizer, and the storage are
+-- implementation and out of scope.
+--
+-- Scope: the Normalizer contract and the overlay.
+-- Includes: Source, Skeleton (tier-0), View (tier-1), Caps, Selector, Annotation,
+--           Patch, the write-back lens, the recognition split, the fail-safe.
+-- Excludes:
+--   - the per-format parsers (each reader's internals)
+--   - the reference tokenizer and the token-count algorithm (a chosen yardstick)
+--   - the CLI surface and the on-disk encoding of the overlay
+--   - the lens span-and-replacement mechanics (the round-trip law is proptested in code)
+
+config {
+    -- An undeclared capability takes the most restrictive setting, so a reader cannot
+    -- over-claim editability (the fail-safe, call/0030).
+    default_round_trip: Boolean = false
+    default_write_back: Boolean = false
+}
+
+given {
+    reader: Reader
+}
+
+enum Semantic {
+    none
+    partial
+    full
+}
+
+-- Which layer a fact lives in. The attested layer re-derives deterministically from the
+-- source bytes; the overlay holds collaborative edits and non-deterministic output.
+enum Layer {
+    attested
+    overlay
+}
+
+-- The kind of a recorded refusal. A refusal is explicit, never a silent partial
+-- (call/0031).
+enum RefusalKind {
+    unsupported
+    refused
+    parse_error
+}
+
+-- The consuming agent on the other side of the boundary.
+entity Consumer {
+    id: String
+}
+
+-- The external material a reader is given: opaque bytes under a content id, with a
+-- format hint, and a trust flag, since ingested material is untrusted (call/0031).
+entity Source {
+    content_id: String
+    hint: String
+    trusted: Boolean
+    hostile: Boolean
+}
+
+-- A reader's declared capabilities for the kind it reads.
+entity Caps {
+    round_trip: Boolean
+    write_back: Boolean
+    semantic: Semantic
+    ocr: Boolean
+}
+
+-- A reader for one modality, carrying the capabilities it declares.
+entity Reader {
+    caps: Caps
+}
+
+-- A content-addressed span: the unit the source map resolves in both directions, a
+-- normalised region to its origin and back.
+entity Span {
+    source: String
+    start: Integer
+    end: Integer
+}
+
+-- The always-resident, token-lean index a consumer reads first. The token counts make
+-- the saving a measured number rather than a claim.
+entity Skeleton {
+    source: Source
+    raw_tokens: Integer
+    normalised_tokens: Integer
+    layer: Layer
+    spans: Set<Span>
+}
+
+-- A fetched-on-demand windowed slice of the full layer.
+entity View {
+    source: Source
+    spans: Set<Span>
+}
+
+-- A W3C Web Annotation selector anchoring an overlay entry into the immutable layer. A
+-- relocatable selector (a text quote) re-finds its anchor after a re-derivation that
+-- shifts offsets; a positional one does not.
+entity Selector {
+    relocatable: Boolean
+}
+
+-- One overlay entry: a body anchored to a source by a selector.
+entity Annotation {
+    source: Source
+    selector: Selector
+    body: String
+    layer: Layer
+}
+
+-- A patch to the source produced by the write-back lens.
+entity Patch {
+    source: Source
+}
+
+-- A recorded refusal: the explicit non-success outcome.
+entity Refusal {
+    kind: RefusalKind
+}
+
+-- The consumer surface: a reader is asked to normalise, to window, to write back, to
+-- annotate, and to recognise.
+surface Compile {
+    facing consumer: Consumer
+    provides:
+        Normalise(consumer, source)
+        Window(consumer, source)
+        Put(consumer, source)
+        Annotate(consumer, source, selector, body)
+        Recognise(consumer, source, deterministic)
+}
+
+-- A reader derives a skeleton from a source. The derivation is deterministic, a pure
+-- function of the bytes, so the immutable layer is attestable the way a binary is, and
+-- every region carries the origin span that makes a fact traceable.
+rule Normalise {
+    when: Normalise(consumer, source)
+    requires: source.hint != "" and not source.hostile
+    ensures: Skeleton.created(source: source, layer: attested)
+}
+
+-- A windowed slice is fetched on demand, so a large document costs only the slice a
+-- task needs.
+rule Window {
+    when: Window(consumer, source)
+    requires: not source.hostile
+    ensures: View.created(source: source)
+}
+
+-- Where a reader declares a well-behaved lens, a write-back produces a patch to the
+-- source. The round-trip law of that lens is proptested per kind in the property lane.
+rule WriteBack {
+    when: Put(consumer, source)
+    requires: reader.caps.write_back
+    ensures: Patch.created(source: source)
+}
+
+-- Where it declares none, write-back refuses. This is the fail-safe: a kind that has not
+-- earned editability cannot be edited through.
+rule WriteBackRefused {
+    when: Put(consumer, source)
+    requires: not reader.caps.write_back
+    ensures: Refusal.created(kind: unsupported)
+}
+
+-- An annotation lands in the overlay, anchored to the immutable layer by its selector.
+rule Annotate {
+    when: Annotate(consumer, source, selector, body)
+    ensures: Annotation.created(source: source, selector: selector, body: body, layer: overlay)
+}
+
+-- Recognition splits by determinism (call/0030, call/0034). A deterministic engine over
+-- fixed bytes is a parse, so it lands in the attested layer.
+rule RecogniseAttested {
+    when: Recognise(consumer, source, deterministic)
+    requires: deterministic
+    ensures: Skeleton.created(source: source, layer: attested)
+}
+
+-- Non-deterministic inference is collaborative output, so it lands in the overlay.
+rule RecogniseOverlay {
+    when: Recognise(consumer, source, deterministic)
+    requires: not deterministic
+    ensures: Annotation.created(source: source, layer: overlay)
+}
+
+-- Untrusted input that is hostile (it hits a resource bound or a malformed structure)
+-- refuses, recorded, rather than returning a silent partial (call/0031).
+rule RefuseHostileInput {
+    when: Normalise(consumer, source)
+    requires: not source.trusted and source.hostile
+    ensures: Refusal.created(kind: refused)
+}
