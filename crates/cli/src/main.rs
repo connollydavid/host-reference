@@ -33,6 +33,8 @@ use host_reference_image::ImageNormalizer;
 use host_reference_av::AvNormalizer;
 #[cfg(feature = "ocr")]
 use host_reference_ocr::OcrNormalizer;
+#[cfg(feature = "openscad")]
+use host_reference_openscad::OpenscadNormalizer;
 #[cfg(feature = "data")]
 use host_reference_data::DataNormalizer;
 #[cfg(feature = "html")]
@@ -93,6 +95,8 @@ fn registry() -> Vec<Box<dyn Normalizer>> {
     reg.push(Box::new(AvNormalizer));
     #[cfg(feature = "ocr")]
     reg.push(Box::new(OcrNormalizer));
+    #[cfg(feature = "openscad")]
+    reg.push(Box::new(OpenscadNormalizer));
     #[cfg(feature = "html")]
     reg.push(Box::new(HtmlNormalizer));
     #[cfg(feature = "vector")]

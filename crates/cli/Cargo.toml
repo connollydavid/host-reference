@@ -33,6 +33,7 @@ host-reference-eda = { path = "../eda", optional = true }
 host-reference-image = { path = "../image", optional = true }
 host-reference-av = { path = "../av", optional = true }
 host-reference-ocr = { path = "../ocr", optional = true }
+host-reference-openscad = { path = "../openscad", optional = true }
 
 # Each reader is a plugin behind a feature (call/0033). The default carries the
 # text-cheap readers, which are light. Heavier readers (office, fixed-layout,
@@ -62,6 +63,9 @@ av = ["dep:host-reference-av"]
 # The OCR plugin runs the host-reference-ocr-helper binary out-of-process (call/0033); enabling this
 # feature links only the permissive plugin, never the engine or the CC-BY-SA-4.0 models.
 ocr = ["dep:host-reference-ocr"]
+# The OpenSCAD plugin runs the host-reference-openscad-helper binary out-of-process (call/0033); the
+# GPL openscad-rs parser stays behind that boundary, never linked into this build.
+openscad = ["dep:host-reference-openscad"]
 html = ["dep:host-reference-html"]
 vector = ["dep:host-reference-vector"]
 netlist = ["dep:host-reference-netlist"]
