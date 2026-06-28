@@ -1,9 +1,12 @@
 //! The overlay: the mutable, collaborative layer over the immutable normalised layer (call/0030). It
 //! is a Loro CRDT document holding annotations, edits, and notes, each anchored to the immutable layer
-//! by a W3C Web Annotation selector. A `TextQuote` selector re-locates by content, so an annotation
-//! survives a re-derivation that shifts offsets. The write-back path resolves a selector to a span and
-//! drives the normaliser's `put`, the well-behaved lens, where one exists; the round-trip law of that
-//! lens is proptested per kind in the property-based lane (the crate's tests).
+//! by a W3C Web Annotation selector. A `TextQuote` selector re-locates by content when the match is
+//! unambiguous, so an annotation survives a re-derivation that shifts offsets; an ambiguous or empty
+//! quote refuses rather than anchoring to the wrong occurrence. The write-back path resolves a
+//! selector to a span and drives the normaliser's `put`, where a well-behaved lens exists. That lens
+//! satisfies the GetPut and PutGet round-trip laws, proptested per kind through the real `view` and
+//! `write_back`; it is well-behaved but not very-well-behaved (PutPut does not hold for a
+//! length-changing edit), a boundary the lens-law tests assert directly rather than claim away.
 
 use std::ops::Range;
 
@@ -46,12 +49,28 @@ pub fn resolve(selector: &Selector, text: &str) -> Option<Range<usize>> {
             }
         }
         Selector::TextQuote { prefix, exact, suffix } => {
-            let contextual = format!("{prefix}{exact}{suffix}");
-            if let Some(i) = text.find(&contextual) {
-                let s = i + prefix.len();
-                return Some(s..s + exact.len());
+            // An empty quote anchors nothing; `str::find("")` would return 0, so guard it (the
+            // degenerate-quote finding).
+            if exact.is_empty() {
+                return None;
             }
-            text.find(exact.as_str()).map(|i| i..i + exact.len())
+            // With disambiguating context, the prefix+exact+suffix match is precise; use it.
+            if !prefix.is_empty() || !suffix.is_empty() {
+                let contextual = format!("{prefix}{exact}{suffix}");
+                if let Some(i) = text.find(&contextual) {
+                    let s = i + prefix.len();
+                    return Some(s..s + exact.len());
+                }
+            }
+            // No context, or the context no longer matches after a re-derivation: the bare quote
+            // anchors only when it is unique. Multiple occurrences cannot be disambiguated, so
+            // refuse rather than silently re-anchor to the first (finding 5).
+            let mut hits = text.match_indices(exact.as_str());
+            let first = hits.next()?;
+            if hits.next().is_some() {
+                return None;
+            }
+            Some(first.0..first.0 + exact.len())
         }
     }
 }

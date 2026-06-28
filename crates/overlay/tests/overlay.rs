@@ -28,7 +28,12 @@ fn crdt_merge_unions_concurrent_annotations() {
     r1.annotate(&a1).unwrap();
     r2.annotate(&a2).unwrap();
 
+    // Merge symmetrically and assert the two replicas converge to the identical sequence, not
+    // merely the same set: a non-convergent or order-divergent merge would be a CRDT defect the
+    // one-direction set-membership check could not catch (finding 11).
     r1.merge(&r2.export().unwrap()).unwrap();
+    r2.merge(&r1.export().unwrap()).unwrap();
+    assert_eq!(r1.annotations(), r2.annotations(), "replicas converge to the same sequence");
     let bodies: Vec<String> = r1.annotations().into_iter().map(|a| a.body).collect();
     assert_eq!(bodies.len(), 2);
     assert!(bodies.contains(&"from replica one".to_string()));
@@ -59,4 +64,34 @@ fn text_position_is_bounds_checked() {
     let text = "short";
     assert_eq!(resolve(&Selector::TextPosition { start: 0, end: 5 }, text), Some(0..5));
     assert_eq!(resolve(&Selector::TextPosition { start: 0, end: 99 }, text), None);
+}
+
+#[test]
+fn text_quote_refuses_an_ambiguous_bare_match() {
+    // Finding 5: the quote "cat" appears twice with no disambiguating context, so the bare match is
+    // ambiguous. The old reader silently re-anchored to the first; resolution now refuses.
+    let text = "on the cat, off the cat";
+    let bare =
+        Selector::TextQuote { prefix: String::new(), exact: "cat".into(), suffix: String::new() };
+    assert_eq!(resolve(&bare, text), None);
+}
+
+#[test]
+fn text_quote_uses_context_to_disambiguate() {
+    // The same ambiguous quote resolves to the intended occurrence when its context matches, the
+    // property a TextQuote selector exists to provide.
+    let text = "on the cat, off the cat";
+    let with_ctx =
+        Selector::TextQuote { prefix: "off the ".into(), exact: "cat".into(), suffix: String::new() };
+    let r = resolve(&with_ctx, text).expect("the contextual match resolves");
+    assert_eq!(&text[r.clone()], "cat");
+    assert_eq!(r.start, 20, "it anchors to the second cat, not the first");
+}
+
+#[test]
+fn text_quote_refuses_an_empty_quote() {
+    // An empty exact would make str::find return 0; the degenerate selector resolves to nothing.
+    let empty =
+        Selector::TextQuote { prefix: String::new(), exact: String::new(), suffix: String::new() };
+    assert_eq!(resolve(&empty, "any text"), None);
 }
