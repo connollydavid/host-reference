@@ -23,6 +23,8 @@ use host_reference_office::OfficeNormalizer;
 use host_reference_mail::MailNormalizer;
 #[cfg(feature = "pdf")]
 use host_reference_pdf::PdfNormalizer;
+#[cfg(feature = "geometry")]
+use host_reference_geometry::GeometryNormalizer;
 #[cfg(feature = "data")]
 use host_reference_data::DataNormalizer;
 #[cfg(feature = "html")]
@@ -73,6 +75,8 @@ fn registry() -> Vec<Box<dyn Normalizer>> {
     reg.push(Box::new(MailNormalizer));
     #[cfg(feature = "pdf")]
     reg.push(Box::new(PdfNormalizer));
+    #[cfg(feature = "geometry")]
+    reg.push(Box::new(GeometryNormalizer));
     #[cfg(feature = "html")]
     reg.push(Box::new(HtmlNormalizer));
     #[cfg(feature = "vector")]

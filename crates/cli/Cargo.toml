@@ -28,6 +28,7 @@ host-reference-epub = { path = "../epub", optional = true }
 host-reference-office = { path = "../office", optional = true }
 host-reference-mail = { path = "../mail", optional = true }
 host-reference-pdf = { path = "../pdf", optional = true }
+host-reference-geometry = { path = "../geometry", optional = true }
 
 # Each reader is a plugin behind a feature (call/0033). The default carries the
 # text-cheap readers, which are light. Heavier readers (office, fixed-layout,
@@ -50,6 +51,7 @@ epub = ["dep:host-reference-epub"]
 office = ["dep:host-reference-office"]
 mail = ["dep:host-reference-mail"]
 pdf = ["dep:host-reference-pdf"]
+geometry = ["dep:host-reference-geometry"]
 html = ["dep:host-reference-html"]
 vector = ["dep:host-reference-vector"]
 netlist = ["dep:host-reference-netlist"]
