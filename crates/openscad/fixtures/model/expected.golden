@@ -1,9 +1,9 @@
 == markdown ==
-openscad: 4 statements
+openscad: 4 statements (engine: host-reference-openscad-helper stub)
 - Assignment
 - ModuleDefinition
 - ModuleInstantiation (x2)
 == source-map ==
 ab770a36d15e:0-83
 == tokens ==
-raw=30 normalised=21
+raw=30 normalised=31

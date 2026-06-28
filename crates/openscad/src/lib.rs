@@ -35,7 +35,7 @@ impl Normalizer for OpenscadNormalizer {
 
     fn skeleton(&self, source: &Source) -> Result<Tier0, Error> {
         let id = content_id(source.bytes);
-        let outline = render(&run_helper(source)?);
+        let outline = render(&run_helper(source)?, &helper_version()?);
         let lossy = String::from_utf8_lossy(source.bytes);
         Ok(Tier0 {
             raw_tokens: count_tokens(&lossy),
@@ -50,7 +50,7 @@ impl Normalizer for OpenscadNormalizer {
     fn view(&self, source: &Source, _select: &SpanSelector) -> Result<Tier1, Error> {
         let id = content_id(source.bytes);
         Ok(Tier1 {
-            markdown: render(&run_helper(source)?),
+            markdown: render(&run_helper(source)?, &helper_version()?),
             source_map: SourceMap {
                 spans: vec![Span { source: id, origin: 0..source.bytes.len() }],
             },
@@ -58,7 +58,7 @@ impl Normalizer for OpenscadNormalizer {
     }
 }
 
-fn render(kinds: &str) -> String {
+fn render(kinds: &str, engine: &str) -> String {
     let mut tally: Vec<(String, usize)> = Vec::new();
     let mut total = 0usize;
     for kind in kinds.lines().map(str::trim).filter(|l| !l.is_empty()) {
@@ -69,7 +69,8 @@ fn render(kinds: &str) -> String {
         }
     }
     tally.sort();
-    let mut out = format!("openscad: {total} statement{}\n", if total == 1 { "" } else { "s" });
+    let mut out =
+        format!("openscad: {total} statement{} (engine: {engine})\n", if total == 1 { "" } else { "s" });
     for (kind, count) in tally {
         if count > 1 {
             out.push_str(&format!("- {kind} (x{count})\n"));
@@ -84,6 +85,20 @@ fn helper_path() -> PathBuf {
     std::env::var_os("HOST_REFERENCE_OPENSCAD_HELPER")
         .map(PathBuf::from)
         .unwrap_or_else(|| PathBuf::from("host-reference-openscad-helper"))
+}
+
+/// The helper's reported version, recorded into the attested skeleton, so the structure tally is a
+/// pure function of the source bytes and this engine version; a different helper version yields a
+/// visibly different attested output rather than a silent divergence (finding 9, call/0034).
+fn helper_version() -> Result<String, Error> {
+    let output = Command::new(helper_path())
+        .arg("--version")
+        .output()
+        .map_err(|e| Error::Parse(format!("openscad: cannot run helper: {e}")))?;
+    if !output.status.success() {
+        return Err(Error::Parse("openscad: helper does not report a version".into()));
+    }
+    Ok(String::from_utf8_lossy(&output.stdout).trim().to_string())
 }
 
 fn run_helper(source: &Source) -> Result<String, Error> {

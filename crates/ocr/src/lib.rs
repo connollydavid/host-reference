@@ -38,7 +38,7 @@ impl Normalizer for OcrNormalizer {
 
     fn skeleton(&self, source: &Source) -> Result<Tier0, Error> {
         let id = content_id(source.bytes);
-        let outline = render(&recognise(source)?);
+        let outline = render(&recognise(source)?, &helper_version()?);
         Ok(Tier0 {
             raw_tokens: source.bytes.len(),
             normalised_tokens: count_tokens(&outline),
@@ -52,7 +52,7 @@ impl Normalizer for OcrNormalizer {
     fn view(&self, source: &Source, _select: &SpanSelector) -> Result<Tier1, Error> {
         let id = content_id(source.bytes);
         Ok(Tier1 {
-            markdown: render(&recognise(source)?),
+            markdown: render(&recognise(source)?, &helper_version()?),
             source_map: SourceMap {
                 spans: vec![Span { source: id, origin: 0..source.bytes.len() }],
             },
@@ -60,9 +60,10 @@ impl Normalizer for OcrNormalizer {
     }
 }
 
-fn render(text: &str) -> String {
+fn render(text: &str, engine: &str) -> String {
     let lines: Vec<&str> = text.lines().filter(|l| !l.trim().is_empty()).collect();
-    let mut out = format!("ocr: {} line{}\n", lines.len(), if lines.len() == 1 { "" } else { "s" });
+    let mut out =
+        format!("ocr: {} line{} (engine: {engine})\n", lines.len(), if lines.len() == 1 { "" } else { "s" });
     for line in lines {
         out.push_str(line);
         out.push('\n');
@@ -74,6 +75,22 @@ fn helper_path() -> PathBuf {
     std::env::var_os("HOST_REFERENCE_OCR_HELPER")
         .map(PathBuf::from)
         .unwrap_or_else(|| PathBuf::from("host-reference-ocr-helper"))
+}
+
+/// The helper's reported version, recorded into the attested skeleton. The recognition is a pure
+/// function of the source bytes and this engine version; out-of-process the engine cannot be a
+/// Cargo.lock dependency, so the attestation declares which engine produced it, and a different
+/// helper version yields a visibly different attested output rather than a silent divergence
+/// (finding 9, call/0034).
+fn helper_version() -> Result<String, Error> {
+    let output = Command::new(helper_path())
+        .arg("--version")
+        .output()
+        .map_err(|e| Error::Parse(format!("ocr: cannot run helper: {e}")))?;
+    if !output.status.success() {
+        return Err(Error::Parse("ocr: helper does not report a version".into()));
+    }
+    Ok(String::from_utf8_lossy(&output.stdout).trim().to_string())
 }
 
 fn recognise(source: &Source) -> Result<String, Error> {

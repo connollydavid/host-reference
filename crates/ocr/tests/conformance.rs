@@ -15,7 +15,7 @@ use host_reference_ocr::OcrNormalizer;
 /// passed and prints fixed recognised text, so the plugin's plumbing is exercised without the engine.
 fn write_stub() -> PathBuf {
     let stub = std::env::temp_dir().join("host-reference-ocr-stub.sh");
-    fs::write(&stub, "#!/bin/sh\n[ -f \"$1\" ] || { echo 'stub: no image' >&2; exit 1; }\necho 'HELLO WORLD'\n")
+    fs::write(&stub, "#!/bin/sh\n[ \"$1\" = --version ] && { echo 'host-reference-ocr-helper stub'; exit 0; }\n[ -f \"$1\" ] || { echo 'stub: no image' >&2; exit 1; }\necho 'HELLO WORLD'\n")
         .expect("write stub helper");
     #[cfg(unix)]
     {

@@ -18,7 +18,7 @@ fn write_stub() -> PathBuf {
     let stub = std::env::temp_dir().join("host-reference-openscad-stub.sh");
     fs::write(
         &stub,
-        "#!/bin/sh\n[ -f \"$1\" ] || { echo 'stub: no scad' >&2; exit 1; }\nprintf 'ModuleDefinition\\nAssignment\\nModuleInstantiation\\nModuleInstantiation\\n'\n",
+        "#!/bin/sh\n[ \"$1\" = --version ] && { echo 'host-reference-openscad-helper stub'; exit 0; }\n[ -f \"$1\" ] || { echo 'stub: no scad' >&2; exit 1; }\nprintf 'ModuleDefinition\\nAssignment\\nModuleInstantiation\\nModuleInstantiation\\n'\n",
     )
     .expect("write stub helper");
     #[cfg(unix)]
