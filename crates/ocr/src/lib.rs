@@ -62,8 +62,11 @@ impl Normalizer for OcrNormalizer {
 
 fn render(text: &str, engine: &str) -> String {
     let lines: Vec<&str> = text.lines().filter(|l| !l.trim().is_empty()).collect();
-    let mut out =
-        format!("ocr: {} line{} (engine: {engine})\n", lines.len(), if lines.len() == 1 { "" } else { "s" });
+    let mut out = format!(
+        "ocr: {} line{} (engine: {engine})\n",
+        lines.len(),
+        if lines.len() == 1 { "" } else { "s" }
+    );
     for line in lines {
         out.push_str(line);
         out.push('\n');

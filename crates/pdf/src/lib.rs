@@ -93,8 +93,10 @@ fn pdf_title(doc: &Document) -> Option<String> {
 fn decode_pdf_text(bytes: &[u8]) -> String {
     match bytes.strip_prefix(&[0xFE, 0xFF]) {
         Some(rest) => {
-            let units: Vec<u16> =
-                rest.chunks(2).map(|c| u16::from_be_bytes([c[0], *c.get(1).unwrap_or(&0)])).collect();
+            let units: Vec<u16> = rest
+                .chunks(2)
+                .map(|c| u16::from_be_bytes([c[0], *c.get(1).unwrap_or(&0)]))
+                .collect();
             String::from_utf16_lossy(&units)
         }
         None => String::from_utf8_lossy(bytes).to_string(),

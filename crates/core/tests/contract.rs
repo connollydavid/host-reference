@@ -29,7 +29,10 @@ impl Normalizer for DocReader {
         Ok(Tier0 {
             markdown: text.to_string(),
             source_map: SourceMap {
-                spans: vec![Span { source: content_id(source.bytes), origin: 0..source.bytes.len() }],
+                spans: vec![Span {
+                    source: content_id(source.bytes),
+                    origin: 0..source.bytes.len(),
+                }],
             },
             raw_tokens: text.len(),
             normalised_tokens: text.len(),
@@ -55,7 +58,8 @@ impl Normalizer for DocReader {
 
     fn put(&self, source: &Source, edit: &Edit) -> Result<Patch, Error> {
         let text = std::str::from_utf8(source.bytes).map_err(|e| Error::Parse(e.to_string()))?;
-        let (start, end) = (edit.at.origin.start.min(text.len()), edit.at.origin.end.min(text.len()));
+        let (start, end) =
+            (edit.at.origin.start.min(text.len()), edit.at.origin.end.min(text.len()));
         let mut out = String::new();
         out.push_str(&text[..start]);
         out.push_str(&edit.replacement);
@@ -80,7 +84,10 @@ impl Normalizer for ReadOnly {
     fn skeleton(&self, source: &Source) -> Result<Tier0, Error> {
         Ok(Tier0 {
             source_map: SourceMap {
-                spans: vec![Span { source: content_id(source.bytes), origin: 0..source.bytes.len() }],
+                spans: vec![Span {
+                    source: content_id(source.bytes),
+                    origin: 0..source.bytes.len(),
+                }],
             },
             ..Default::default()
         })
@@ -117,7 +124,10 @@ impl Normalizer for GuardedReader {
         }
         Ok(Tier0 {
             source_map: SourceMap {
-                spans: vec![Span { source: content_id(source.bytes), origin: 0..source.bytes.len() }],
+                spans: vec![Span {
+                    source: content_id(source.bytes),
+                    origin: 0..source.bytes.len(),
+                }],
             },
             ..Default::default()
         })
@@ -187,7 +197,8 @@ fn write_back_refused_without_the_capability() {
     // WriteBackRefused: a reader that declares no lens takes the default put, which refuses. The
     // fail-safe: a kind that has not earned editability cannot be edited through.
     let bytes = b"opaque";
-    let edit = Edit { at: Span { source: content_id(bytes), origin: 0..1 }, replacement: "x".into() };
+    let edit =
+        Edit { at: Span { source: content_id(bytes), origin: 0..1 }, replacement: "x".into() };
     assert!(matches!(ReadOnly.put(&src(bytes, "ro"), &edit), Err(Error::Unsupported(_))));
 }
 
@@ -206,7 +217,7 @@ fn window_refuses_a_hostile_source() {
     // rule-failure.Window.1: Window requires the source not be hostile, so a hostile source refuses
     // rather than returning a View. (Distinct from refusing an unsupported selector above.)
     let hostile = vec![b'x'; 64];
-    let got =
-        GuardedReader.view(&src(&hostile, "guarded"), &SpanSelector::CharOffset { start: 0, len: 4 });
+    let got = GuardedReader
+        .view(&src(&hostile, "guarded"), &SpanSelector::CharOffset { start: 0, len: 4 });
     assert!(matches!(got, Err(Error::Refused(_))));
 }

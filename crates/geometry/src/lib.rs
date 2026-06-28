@@ -25,8 +25,18 @@ impl Normalizer for GeometryNormalizer {
         matches!(
             source.hint,
             Some(
-                "stl" | "gltf" | "glb" | "dxf" | "obj" | "ply" | "gcode" | "nc" | "3mf" | "amf"
-                    | "step" | "stp"
+                "stl"
+                    | "gltf"
+                    | "glb"
+                    | "dxf"
+                    | "obj"
+                    | "ply"
+                    | "gcode"
+                    | "nc"
+                    | "3mf"
+                    | "amf"
+                    | "step"
+                    | "stp"
             )
         )
     }
@@ -188,8 +198,7 @@ fn gltf_shape(bytes: &[u8]) -> Result<String, Error> {
 
 fn dxf_shape(bytes: &[u8]) -> Result<String, Error> {
     let mut cursor = Cursor::new(bytes);
-    let drawing =
-        dxf::Drawing::load(&mut cursor).map_err(|e| Error::Parse(format!("dxf: {e}")))?;
+    let drawing = dxf::Drawing::load(&mut cursor).map_err(|e| Error::Parse(format!("dxf: {e}")))?;
     let mut tally: Vec<(String, usize)> = Vec::new();
     let mut total = 0usize;
     for entity in drawing.entities() {

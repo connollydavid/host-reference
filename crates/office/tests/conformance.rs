@@ -203,9 +203,7 @@ fn gen_pptx() -> Vec<u8> {
 
 fn check(dir: &str, bytes: &[u8], hint: &str) {
     let base = Path::new(env!("CARGO_MANIFEST_DIR")).join("fixtures").join(dir);
-    let tier0 = OfficeNormalizer
-        .skeleton(&Source { bytes, hint: Some(hint) })
-        .expect("skeleton");
+    let tier0 = OfficeNormalizer.skeleton(&Source { bytes, hint: Some(hint) }).expect("skeleton");
     let got = serialize_tier0(&tier0);
 
     let golden = base.join("expected.golden");
@@ -233,4 +231,3 @@ fn xlsx_workbook_shape() {
 fn pptx_deck_shape() {
     check("deck", &gen_pptx(), "pptx");
 }
-

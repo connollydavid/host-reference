@@ -62,9 +62,7 @@ fn gen_arrow() -> Vec<u8> {
 
 fn check(dir: &str, bytes: &[u8], hint: &str) {
     let base = Path::new(env!("CARGO_MANIFEST_DIR")).join("fixtures").join(dir);
-    let tier0 = ColumnarNormalizer
-        .skeleton(&Source { bytes, hint: Some(hint) })
-        .expect("skeleton");
+    let tier0 = ColumnarNormalizer.skeleton(&Source { bytes, hint: Some(hint) }).expect("skeleton");
     let got = serialize_tier0(&tier0);
 
     let golden = base.join("expected.golden");

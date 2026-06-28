@@ -81,8 +81,11 @@ fn text_quote_uses_context_to_disambiguate() {
     // The same ambiguous quote resolves to the intended occurrence when its context matches, the
     // property a TextQuote selector exists to provide.
     let text = "on the cat, off the cat";
-    let with_ctx =
-        Selector::TextQuote { prefix: "off the ".into(), exact: "cat".into(), suffix: String::new() };
+    let with_ctx = Selector::TextQuote {
+        prefix: "off the ".into(),
+        exact: "cat".into(),
+        suffix: String::new(),
+    };
     let r = resolve(&with_ctx, text).expect("the contextual match resolves");
     assert_eq!(&text[r.clone()], "cat");
     assert_eq!(r.start, 20, "it anchors to the second cat, not the first");

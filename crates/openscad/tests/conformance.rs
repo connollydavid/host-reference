@@ -33,9 +33,8 @@ fn check(dir: &str, input: &str, hint: &str) {
     std::env::set_var("HOST_REFERENCE_OPENSCAD_HELPER", write_stub());
     let base = Path::new(env!("CARGO_MANIFEST_DIR")).join("fixtures").join(dir);
     let bytes = fs::read(base.join(input)).expect("read fixture input");
-    let tier0 = OpenscadNormalizer
-        .skeleton(&Source { bytes: &bytes, hint: Some(hint) })
-        .expect("skeleton");
+    let tier0 =
+        OpenscadNormalizer.skeleton(&Source { bytes: &bytes, hint: Some(hint) }).expect("skeleton");
     let got = serialize_tier0(&tier0);
 
     let golden = base.join("expected.golden");

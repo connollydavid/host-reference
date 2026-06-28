@@ -27,10 +27,7 @@ impl Normalizer for AvNormalizer {
     }
 
     fn detect(&self, source: &Source) -> bool {
-        matches!(
-            source.hint,
-            Some("wav" | "flac" | "ogg" | "oga" | "mp4" | "mov" | "m4v" | "m4a")
-        )
+        matches!(source.hint, Some("wav" | "flac" | "ogg" | "oga" | "mp4" | "mov" | "m4v" | "m4a"))
     }
 
     fn skeleton(&self, source: &Source) -> Result<Tier0, Error> {
@@ -75,10 +72,8 @@ fn audio_shape(bytes: &[u8], ext: Option<&str>) -> Result<String, Error> {
     let probed = symphonia::default::get_probe()
         .format(&hint, mss, &FormatOptions::default(), &MetadataOptions::default())
         .map_err(|e| Error::Parse(format!("audio: {e}")))?;
-    let track = probed
-        .format
-        .default_track()
-        .ok_or_else(|| Error::Parse("audio: no track".to_string()))?;
+    let track =
+        probed.format.default_track().ok_or_else(|| Error::Parse("audio: no track".to_string()))?;
     let params = &track.codec_params;
     let codec = symphonia::default::get_codecs()
         .get_codec(params.codec)

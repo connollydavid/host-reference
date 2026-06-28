@@ -61,10 +61,8 @@ impl Normalizer for BibtexNormalizer {
 
 fn bibtex_shape(text: &str) -> Result<String, Error> {
     let bib = Bibliography::parse(text).map_err(|e| Error::Parse(format!("bibtex: {e}")))?;
-    let mut entries: Vec<(String, String)> = bib
-        .iter()
-        .map(|e| (e.key.clone(), format!("{:?}", e.entry_type)))
-        .collect();
+    let mut entries: Vec<(String, String)> =
+        bib.iter().map(|e| (e.key.clone(), format!("{:?}", e.entry_type))).collect();
     entries.sort();
     let mut out = format!("bibliography: {} entries\n", entries.len());
     for (key, kind) in entries {

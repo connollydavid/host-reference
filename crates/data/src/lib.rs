@@ -37,8 +37,19 @@ impl Normalizer for DataNormalizer {
         matches!(
             source.hint,
             Some(
-                "json" | "toml" | "yaml" | "yml" | "csv" | "tsv" | "tab" | "xml" | "rss" | "atom"
-                    | "ndjson" | "jsonl" | "ipynb"
+                "json"
+                    | "toml"
+                    | "yaml"
+                    | "yml"
+                    | "csv"
+                    | "tsv"
+                    | "tab"
+                    | "xml"
+                    | "rss"
+                    | "atom"
+                    | "ndjson"
+                    | "jsonl"
+                    | "ipynb"
             )
         )
     }
@@ -169,14 +180,9 @@ fn field(key: &str, val: &Value, depth: usize, out: &mut String) {
 }
 
 fn delimited_shape(text: &str, delim: u8) -> Result<String, Error> {
-    let mut rdr = csv::ReaderBuilder::new()
-        .has_headers(true)
-        .delimiter(delim)
-        .from_reader(text.as_bytes());
-    let headers = rdr
-        .headers()
-        .map_err(|e| Error::Parse(format!("delimited: {e}")))?
-        .clone();
+    let mut rdr =
+        csv::ReaderBuilder::new().has_headers(true).delimiter(delim).from_reader(text.as_bytes());
+    let headers = rdr.headers().map_err(|e| Error::Parse(format!("delimited: {e}")))?.clone();
     let mut rows = 0usize;
     for rec in rdr.records() {
         rec.map_err(|e| Error::Parse(format!("delimited: {e}")))?;
@@ -249,12 +255,7 @@ fn cell_first_line(cell: &Value) -> String {
         Some(Value::Array(arr)) => arr.iter().filter_map(|v| v.as_str()).collect(),
         _ => String::new(),
     };
-    joined
-        .lines()
-        .map(str::trim)
-        .find(|l| !l.is_empty())
-        .unwrap_or("")
-        .to_string()
+    joined.lines().map(str::trim).find(|l| !l.is_empty()).unwrap_or("").to_string()
 }
 
 fn xml_shape(text: &str) -> Result<String, Error> {

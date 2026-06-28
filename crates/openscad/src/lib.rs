@@ -69,8 +69,10 @@ fn render(kinds: &str, engine: &str) -> String {
         }
     }
     tally.sort();
-    let mut out =
-        format!("openscad: {total} statement{} (engine: {engine})\n", if total == 1 { "" } else { "s" });
+    let mut out = format!(
+        "openscad: {total} statement{} (engine: {engine})\n",
+        if total == 1 { "" } else { "s" }
+    );
     for (kind, count) in tally {
         if count > 1 {
             out.push_str(&format!("- {kind} (x{count})\n"));
@@ -109,7 +111,8 @@ fn run_helper(source: &Source) -> Result<String, Error> {
         .suffix(".scad")
         .tempfile()
         .map_err(|e| Error::Parse(format!("openscad: staging source: {e}")))?;
-    file.write_all(source.bytes).map_err(|e| Error::Parse(format!("openscad: staging source: {e}")))?;
+    file.write_all(source.bytes)
+        .map_err(|e| Error::Parse(format!("openscad: staging source: {e}")))?;
 
     // `file` is held open across the helper run (the helper reads it by path) and removed on drop.
     let output = Command::new(helper_path())

@@ -36,7 +36,8 @@ impl Normalizer for SvgNormalizer {
     fn skeleton(&self, source: &Source) -> Result<Tier0, Error> {
         let text = self.text(source)?;
         let id = content_id(source.bytes);
-        let doc = roxmltree::Document::parse(text).map_err(|e| Error::Parse(format!("svg: {e}")))?;
+        let doc =
+            roxmltree::Document::parse(text).map_err(|e| Error::Parse(format!("svg: {e}")))?;
         let root = doc.root_element();
 
         let w = root.attribute("width").unwrap_or("?");
@@ -49,12 +50,8 @@ impl Normalizer for SvgNormalizer {
             let name = node.tag_name().name();
             *counts.entry(name).or_insert(0) += 1;
             if matches!(name, "text" | "title" | "desc") {
-                let label = node
-                    .text()
-                    .unwrap_or("")
-                    .split_whitespace()
-                    .collect::<Vec<_>>()
-                    .join(" ");
+                let label =
+                    node.text().unwrap_or("").split_whitespace().collect::<Vec<_>>().join(" ");
                 if !label.is_empty() {
                     labels.push(label);
                 }

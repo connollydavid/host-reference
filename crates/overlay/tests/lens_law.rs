@@ -15,7 +15,7 @@
 //! for a length-changing replacement, since a fixed-offset splice computes the second edit's offsets
 //! against the original text. That boundary is asserted directly rather than claimed away.
 
-use host_reference_core::{content_id, Edit, Normalizer, Source, SpanSelector, Span};
+use host_reference_core::{content_id, Edit, Normalizer, Source, Span, SpanSelector};
 use host_reference_data::DataNormalizer;
 use host_reference_overlay::{resolve, write_back, Selector};
 use host_reference_prose::ProseNormalizer;

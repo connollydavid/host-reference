@@ -158,7 +158,10 @@ mod tests {
         let text = "# Real\nintro\n```\n# not a heading\n```\nbody\n# Next\ntail\n";
         let (start, end) = section_range(text, "Real").expect("the real section resolves");
         // The section runs to the next real heading (# Next), spanning the whole fenced block.
-        assert!(text[start..end].contains("# not a heading"), "the fenced line stays inside the section");
+        assert!(
+            text[start..end].contains("# not a heading"),
+            "the fenced line stays inside the section"
+        );
         assert!(!text[start..end].contains("# Next"), "it stops at the next real heading");
     }
 }

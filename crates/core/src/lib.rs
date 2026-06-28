@@ -185,19 +185,17 @@ pub fn count_tokens(text: &str) -> usize {
     use std::sync::OnceLock;
     use tiktoken_rs::{o200k_base, CoreBPE};
     static BPE: OnceLock<CoreBPE> = OnceLock::new();
-    BPE.get_or_init(|| o200k_base().expect("embedded o200k_base vocab"))
-        .encode_ordinary(text)
-        .len()
+    BPE.get_or_init(|| o200k_base().expect("embedded o200k_base vocab")).encode_ordinary(text).len()
 }
 
-/// The canonical, deterministic serialization of a `Tier0`, the form a conformance fixture pins and
-/// compares byte for byte. The spans are sorted by their source range, so the form is stable
-/// regardless of the order the normaliser built them in.
 /// Whether a line is one of the canonical-form section delimiters, the lines a consumer splits on.
 fn is_section_delimiter(line: &str) -> bool {
     matches!(line, "== markdown ==" | "== source-map ==" | "== tokens ==")
 }
 
+/// The canonical, deterministic serialization of a `Tier0`, the form a conformance fixture pins and
+/// compares byte for byte. The spans are sorted by their source range, so the form is stable
+/// regardless of the order the normaliser built them in.
 pub fn serialize_tier0(t: &Tier0) -> String {
     let mut out = String::new();
     out.push_str("== markdown ==\n");
@@ -326,7 +324,7 @@ mod tests {
     #[test]
     fn char_offset_window_floors_to_char_boundary() {
         let text = "café"; // 'é' occupies bytes 3..5
-        // a start inside the multibyte char floors down to a boundary.
+                           // a start inside the multibyte char floors down to a boundary.
         assert_eq!(char_offset_window(text, 4, 0), (3, 3));
         // an end inside the multibyte char floors down too.
         assert_eq!(char_offset_window(text, 0, 4), (0, 3));

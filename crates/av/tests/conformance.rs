@@ -4,15 +4,14 @@
 use std::fs;
 use std::path::Path;
 
-use host_reference_core::{serialize_tier0, Normalizer, Source};
 use host_reference_av::AvNormalizer;
+use host_reference_core::{serialize_tier0, Normalizer, Source};
 
 fn check(dir: &str, input: &str, hint: &str) {
     let base = Path::new(env!("CARGO_MANIFEST_DIR")).join("fixtures").join(dir);
     let bytes = fs::read(base.join(input)).expect("read fixture input");
-    let tier0 = AvNormalizer
-        .skeleton(&Source { bytes: &bytes, hint: Some(hint) })
-        .expect("skeleton");
+    let tier0 =
+        AvNormalizer.skeleton(&Source { bytes: &bytes, hint: Some(hint) }).expect("skeleton");
     let got = serialize_tier0(&tier0);
 
     let golden = base.join("expected.golden");

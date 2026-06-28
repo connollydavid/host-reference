@@ -60,8 +60,7 @@ fn shape(bytes: &[u8]) -> Result<String, Error> {
         .format()
         .map(|f| format!("{f:?}").to_lowercase())
         .unwrap_or_else(|| "unknown".to_string());
-    let (w, h) =
-        reader.into_dimensions().map_err(|e| Error::Parse(format!("image: {e}")))?;
+    let (w, h) = reader.into_dimensions().map_err(|e| Error::Parse(format!("image: {e}")))?;
     let mut out = format!("image: {format} {w}x{h}\n");
     if let Some(exif) = read_exif(bytes) {
         out.push_str("exif:\n");
@@ -73,10 +72,8 @@ fn shape(bytes: &[u8]) -> Result<String, Error> {
 fn read_exif(bytes: &[u8]) -> Option<String> {
     let mut cursor = Cursor::new(bytes);
     let exif = exif::Reader::new().read_from_container(&mut cursor).ok()?;
-    let mut fields: Vec<(String, String)> = exif
-        .fields()
-        .map(|f| (f.tag.to_string(), f.display_value().to_string()))
-        .collect();
+    let mut fields: Vec<(String, String)> =
+        exif.fields().map(|f| (f.tag.to_string(), f.display_value().to_string())).collect();
     if fields.is_empty() {
         return None;
     }

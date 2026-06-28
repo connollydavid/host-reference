@@ -78,7 +78,10 @@ impl Normalizer for HtmlNormalizer {
             normalised_tokens: count_tokens(&outline),
             markdown: outline,
             source_map: SourceMap {
-                spans: vec![Span { source: content_id(source.bytes), origin: 0..source.bytes.len() }],
+                spans: vec![Span {
+                    source: content_id(source.bytes),
+                    origin: 0..source.bytes.len(),
+                }],
             },
         })
     }

@@ -4,9 +4,10 @@
 
 use std::process::ExitCode;
 
-use host_reference_core::{serialize_tier0, Error, Normalizer, Source, SpanSelector};
 #[cfg(feature = "asciidoc")]
 use host_reference_asciidoc::AsciidocNormalizer;
+#[cfg(feature = "av")]
+use host_reference_av::AvNormalizer;
 #[cfg(feature = "bibtex")]
 use host_reference_bibtex::BibtexNormalizer;
 #[cfg(feature = "calendar")]
@@ -15,36 +16,35 @@ use host_reference_calendar::CalendarNormalizer;
 use host_reference_columnar::ColumnarNormalizer;
 #[cfg(feature = "config")]
 use host_reference_config::ConfigNormalizer;
-#[cfg(feature = "epub")]
-use host_reference_epub::EpubNormalizer;
-#[cfg(feature = "office")]
-use host_reference_office::OfficeNormalizer;
-#[cfg(feature = "mail")]
-use host_reference_mail::MailNormalizer;
-#[cfg(feature = "pdf")]
-use host_reference_pdf::PdfNormalizer;
-#[cfg(feature = "geometry")]
-use host_reference_geometry::GeometryNormalizer;
-#[cfg(feature = "eda")]
-use host_reference_eda::EdaNormalizer;
-#[cfg(feature = "image")]
-use host_reference_image::ImageNormalizer;
-#[cfg(feature = "av")]
-use host_reference_av::AvNormalizer;
-#[cfg(feature = "ocr")]
-use host_reference_ocr::OcrNormalizer;
-#[cfg(feature = "openscad")]
-use host_reference_openscad::OpenscadNormalizer;
+use host_reference_core::{serialize_tier0, Error, Normalizer, Source, SpanSelector};
 #[cfg(feature = "data")]
 use host_reference_data::DataNormalizer;
+#[cfg(feature = "eda")]
+use host_reference_eda::EdaNormalizer;
+#[cfg(feature = "epub")]
+use host_reference_epub::EpubNormalizer;
+#[cfg(feature = "geometry")]
+use host_reference_geometry::GeometryNormalizer;
 #[cfg(feature = "html")]
 use host_reference_html::HtmlNormalizer;
+#[cfg(feature = "image")]
+use host_reference_image::ImageNormalizer;
+#[cfg(feature = "mail")]
+use host_reference_mail::MailNormalizer;
 #[cfg(feature = "netlist")]
 use host_reference_netlist::SpiceNormalizer;
-#[cfg(feature = "prose")]
-use host_reference_prose::ProseNormalizer;
+#[cfg(feature = "ocr")]
+use host_reference_ocr::OcrNormalizer;
+#[cfg(feature = "office")]
+use host_reference_office::OfficeNormalizer;
+#[cfg(feature = "openscad")]
+use host_reference_openscad::OpenscadNormalizer;
 #[cfg(feature = "org")]
 use host_reference_org::OrgNormalizer;
+#[cfg(feature = "pdf")]
+use host_reference_pdf::PdfNormalizer;
+#[cfg(feature = "prose")]
+use host_reference_prose::ProseNormalizer;
 #[cfg(feature = "rst")]
 use host_reference_rst::RstNormalizer;
 #[cfg(feature = "rtf")]
@@ -133,7 +133,8 @@ fn pick<'a>(reg: &'a [Box<dyn Normalizer>], source: &Source) -> Result<&'a dyn N
     // reader claims the same source (image and OCR both detect rasters, finding 6), surface the
     // collision rather than silently picking the first; the operator enables only the wanted reader.
     let mut hits = reg.iter().map(|n| n.as_ref()).filter(|n| n.detect(source));
-    let first = hits.next().ok_or(Error::Unsupported("no normaliser is registered for this kind"))?;
+    let first =
+        hits.next().ok_or(Error::Unsupported("no normaliser is registered for this kind"))?;
     if hits.next().is_some() {
         return Err(Error::Refused(
             "more than one reader claims this kind (e.g. image and OCR both read rasters); \
@@ -175,9 +176,9 @@ fn run(args: &[String]) -> Result<String, Error> {
         Some("view") => {
             let path = args.get(1).ok_or(Error::Parse("view needs a source path".into()))?;
             let sel = match args.iter().position(|a| a == "--select") {
-                Some(i) => args
-                    .get(i + 1)
-                    .ok_or(Error::Parse("--select needs a selector".into()))?,
+                Some(i) => {
+                    args.get(i + 1).ok_or(Error::Parse("--select needs a selector".into()))?
+                }
                 None => return Err(Error::Parse("view needs --select <selector>".into())),
             };
             let bytes = std::fs::read(path).map_err(|e| Error::Parse(e.to_string()))?;

@@ -65,9 +65,8 @@ fn asciidoc_shape(text: &str) -> Result<String, Error> {
     let bump = Bump::new();
     let cwd = std::path::PathBuf::from(".").into();
     let parser = Parser::from_str(text, SourceFile::Stdin { cwd }, &bump);
-    let result = parser
-        .parse()
-        .map_err(|d| Error::Parse(format!("asciidoc: {} diagnostics", d.len())))?;
+    let result =
+        parser.parse().map_err(|d| Error::Parse(format!("asciidoc: {} diagnostics", d.len())))?;
     let mut out = String::new();
     if let DocContent::Sections(sectioned) = &result.document.content {
         for section in &sectioned.sections {

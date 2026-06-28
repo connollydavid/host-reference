@@ -47,7 +47,8 @@ fn gen_pdf() -> Vec<u8> {
     doc.objects.insert(pages_id, Object::Dictionary(pages));
     let catalog_id = doc.add_object(dictionary! { "Type" => "Catalog", "Pages" => pages_id });
     doc.trailer.set("Root", catalog_id);
-    let info_id = doc.add_object(dictionary! { "Title" => Object::string_literal("Reference Datasheet") });
+    let info_id =
+        doc.add_object(dictionary! { "Title" => Object::string_literal("Reference Datasheet") });
     doc.trailer.set("Info", info_id);
     let mut buf = Vec::new();
     doc.save_to(&mut buf).expect("save pdf");
@@ -56,9 +57,7 @@ fn gen_pdf() -> Vec<u8> {
 
 fn check(dir: &str, bytes: &[u8], hint: &str) {
     let base = Path::new(env!("CARGO_MANIFEST_DIR")).join("fixtures").join(dir);
-    let tier0 = PdfNormalizer
-        .skeleton(&Source { bytes, hint: Some(hint) })
-        .expect("skeleton");
+    let tier0 = PdfNormalizer.skeleton(&Source { bytes, hint: Some(hint) }).expect("skeleton");
     let got = serialize_tier0(&tier0);
 
     let golden = base.join("expected.golden");
