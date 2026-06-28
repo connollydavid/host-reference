@@ -99,8 +99,10 @@ fn parse_entries(text: &str) -> Result<Vec<Entry>, Error> {
 fn calendar_shape(text: &str) -> Result<String, Error> {
     let mut tally: Vec<(String, usize)> = Vec::new();
     let mut total = 0usize;
+    let mut saw_calendar = false;
     for e in parse_entries(text)? {
         if let Entry::ICalendar(ical) = e {
+            saw_calendar = true;
             for c in &ical.components {
                 total += 1;
                 let kind = format!("{:?}", c.component_type);
@@ -110,6 +112,12 @@ fn calendar_shape(text: &str) -> Result<String, Error> {
                 }
             }
         }
+    }
+    // calcard parses leniently, so non-calendar input yields no VCALENDAR rather than an error.
+    // A genuine calendar carries at least one VCALENDAR (an empty one has zero components but is
+    // still present); its absence is a malformed input, refused rather than reported as zero.
+    if !saw_calendar {
+        return Err(Error::Refused("calendar: no VCALENDAR found".into()));
     }
     tally.sort();
     let mut out = format!("calendar: {total} components\n");
@@ -137,6 +145,10 @@ fn vcard_shape(text: &str) -> Result<String, Error> {
                 }
             }
         }
+    }
+    // As with calendars, non-vCard input parses to no VCARD rather than an error; refuse it.
+    if count == 0 {
+        return Err(Error::Refused("vcard: no VCARD found".into()));
     }
     props.sort();
     let mut out = format!("vcards: {count} cards\n");

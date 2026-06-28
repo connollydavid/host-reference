@@ -32,7 +32,7 @@ rule-success.Normalise                     => test:normalise_yields_attested_ske
 rule-failure.Normalise.1                   => test:normalise_requires_a_format_hint
 rule-entity-creation.Normalise.1           => test:normalise_yields_attested_skeleton
 rule-success.Window                        => test:window_yields_a_slice
-rule-failure.Window.1                      => test:window_refuses_an_unsupported_selector
+rule-failure.Window.1                      => test:window_refuses_a_hostile_source
 rule-entity-creation.Window.1              => test:window_yields_a_slice
 rule-success.WriteBack                     => test:write_back_produces_a_patch
 rule-failure.WriteBack.1                   => test:write_back_refused_without_the_capability
@@ -55,8 +55,11 @@ rule-entity-creation.RecogniseAttested.1   => waived: realised by the attested o
 rule-success.RecogniseOverlay              => waived: the non-deterministic transcription adapter rides the overlay (call/0030), not a single trait method
 rule-failure.RecogniseOverlay.1            => waived: the non-deterministic transcription adapter rides the overlay (call/0030), not a single trait method
 rule-entity-creation.RecogniseOverlay.1    => waived: the non-deterministic transcription adapter rides the overlay (call/0030), not a single trait method
-# Hostile-input refusal is the call/0031 fail-safe, realised per reader where a resource bound or a
-# malformed structure is hit (Error::Refused); it is a cross-cutting guarantee, not one trait method.
-rule-success.RefuseHostileInput            => waived: the call/0031 fail-safe, realised per reader as Error::Refused where a bound is hit
-rule-failure.RefuseHostileInput.1          => waived: the call/0031 fail-safe, realised per reader as Error::Refused where a bound is hit
-rule-entity-creation.RefuseHostileInput.1  => waived: the call/0031 fail-safe, realised per reader as Error::Refused where a bound is hit
+# Hostile-input refusal is the call/0031 fail-safe: a source that trips a resource bound or a
+# malformed structure is refused explicitly (Error::Refused), never a panic or a silent partial. The
+# contract test discharges it at the trait level; the per-reader instance tests (calendar refuses a
+# truncated .ics, office and epub refuse a deflate bomb, av refuses a bogus chunk size, and the core
+# char_offset_window/guard_panic unit tests) cover the realisations.
+rule-success.RefuseHostileInput            => test:refuse_hostile_input_yields_refused
+rule-failure.RefuseHostileInput.1          => test:refuse_hostile_input_yields_refused
+rule-entity-creation.RefuseHostileInput.1  => test:refuse_hostile_input_yields_refused
