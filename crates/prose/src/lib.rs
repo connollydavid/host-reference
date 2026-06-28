@@ -39,8 +39,16 @@ fn section_range(text: &str, title: &str) -> Option<(usize, usize)> {
     let mut start = None;
     let mut level = 0usize;
     let mut offset = 0usize;
+    let mut in_fence = false;
     for line in text.split_inclusive('\n') {
-        let h = heading_level(line);
+        // A fenced code block toggles on a ``` line; a `#` line inside it is not a heading, the
+        // same fence awareness the skeleton outline applies (finding 8).
+        if line.trim_start().starts_with("```") {
+            in_fence = !in_fence;
+            offset += line.len();
+            continue;
+        }
+        let h = if in_fence { 0 } else { heading_level(line) };
         if let Some(s) = start {
             if h >= 1 && h <= level {
                 return Some((s, offset));
@@ -136,5 +144,21 @@ impl Normalizer for ProseNormalizer {
         out.push_str(&edit.replacement);
         out.push_str(&text[end..]);
         Ok(Patch { bytes: out.into_bytes() })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn section_range_skips_a_heading_inside_a_fence() {
+        // A `#` line inside a fenced code block must not be mistaken for a section boundary
+        // (finding 8, the view-Section sibling of the outline fix).
+        let text = "# Real\nintro\n```\n# not a heading\n```\nbody\n# Next\ntail\n";
+        let (start, end) = section_range(text, "Real").expect("the real section resolves");
+        // The section runs to the next real heading (# Next), spanning the whole fenced block.
+        assert!(text[start..end].contains("# not a heading"), "the fenced line stays inside the section");
+        assert!(!text[start..end].contains("# Next"), "it stops at the next real heading");
     }
 }
