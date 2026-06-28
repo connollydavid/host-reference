@@ -1,7 +1,7 @@
-//! The office normaliser, through undoc's unified document model. DOCX is wired and tested now; PPTX
-//! and XLSX follow as their fixtures land (undoc reads all three). The skeleton is the document title,
-//! the section names and heading outline walked from the sections, and the embedded-resource count.
-//! The full text view is a later refinement. The source map is whole-document for now.
+//! The office normaliser: DOCX, PPTX, and XLSX through undoc's unified document model. The skeleton is
+//! the document title, the section names (slides and sheets) and heading outline walked from the
+//! sections, and the embedded-resource count. The full text view is a later refinement. The source
+//! map is whole-document for now.
 
 use host_reference_core::{
     content_id, count_tokens, Caps, Error, Modality, Normalizer, Semantic, Source, SourceMap, Span,
@@ -21,7 +21,7 @@ impl Normalizer for OfficeNormalizer {
     }
 
     fn detect(&self, source: &Source) -> bool {
-        matches!(source.hint, Some("docx"))
+        matches!(source.hint, Some("docx" | "pptx" | "xlsx"))
     }
 
     fn skeleton(&self, source: &Source) -> Result<Tier0, Error> {
