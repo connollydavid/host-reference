@@ -1454,7 +1454,7 @@ checksum = "2304e00983f87ffb38b55b444b5e3b60a884b5d30c0fca7d82fe33449bbe55ea"
 
 [[package]]
 name = "host-reference"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "host-reference-asciidoc",
  "host-reference-av",
@@ -1484,7 +1484,7 @@ dependencies = [
 
 [[package]]
 name = "host-reference-asciidoc"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "asciidork-ast",
  "asciidork-parser",
@@ -1494,7 +1494,7 @@ dependencies = [
 
 [[package]]
 name = "host-reference-av"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "host-reference-core",
  "mp4",
@@ -1503,7 +1503,7 @@ dependencies = [
 
 [[package]]
 name = "host-reference-bibtex"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "biblatex",
  "host-reference-core",
@@ -1511,7 +1511,7 @@ dependencies = [
 
 [[package]]
 name = "host-reference-calendar"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "calcard",
  "host-reference-core",
@@ -1519,7 +1519,7 @@ dependencies = [
 
 [[package]]
 name = "host-reference-columnar"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "arrow",
  "bytes",
@@ -1529,7 +1529,7 @@ dependencies = [
 
 [[package]]
 name = "host-reference-config"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "dotenvy",
  "host-reference-core",
@@ -1539,7 +1539,7 @@ dependencies = [
 
 [[package]]
 name = "host-reference-core"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "sha2 0.11.0",
  "tiktoken-rs",
@@ -1547,7 +1547,7 @@ dependencies = [
 
 [[package]]
 name = "host-reference-data"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "csv",
  "host-reference-core",
@@ -1559,7 +1559,7 @@ dependencies = [
 
 [[package]]
 name = "host-reference-eda"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "gerber_parser",
  "host-reference-core",
@@ -1569,7 +1569,7 @@ dependencies = [
 
 [[package]]
 name = "host-reference-epub"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "host-reference-core",
  "rbook",
@@ -1578,7 +1578,7 @@ dependencies = [
 
 [[package]]
 name = "host-reference-geometry"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "dxf",
  "gcode",
@@ -1594,7 +1594,7 @@ dependencies = [
 
 [[package]]
 name = "host-reference-html"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "host-reference-core",
  "htmd",
@@ -1602,7 +1602,7 @@ dependencies = [
 
 [[package]]
 name = "host-reference-image"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "host-reference-core",
  "image",
@@ -1611,7 +1611,7 @@ dependencies = [
 
 [[package]]
 name = "host-reference-mail"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "host-reference-core",
  "mail-parser",
@@ -1619,21 +1619,21 @@ dependencies = [
 
 [[package]]
 name = "host-reference-netlist"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "host-reference-core",
 ]
 
 [[package]]
 name = "host-reference-ocr"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "host-reference-core",
 ]
 
 [[package]]
 name = "host-reference-office"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "host-reference-core",
  "undoc",
@@ -1642,14 +1642,14 @@ dependencies = [
 
 [[package]]
 name = "host-reference-openscad"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "host-reference-core",
 ]
 
 [[package]]
 name = "host-reference-org"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "host-reference-core",
  "orgize",
@@ -1657,7 +1657,7 @@ dependencies = [
 
 [[package]]
 name = "host-reference-overlay"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "host-reference-core",
  "host-reference-data",
@@ -1670,7 +1670,7 @@ dependencies = [
 
 [[package]]
 name = "host-reference-pdf"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "host-reference-core",
  "lopdf",
@@ -1679,14 +1679,14 @@ dependencies = [
 
 [[package]]
 name = "host-reference-prose"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "host-reference-core",
 ]
 
 [[package]]
 name = "host-reference-rst"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "document_tree",
  "host-reference-core",
@@ -1695,7 +1695,7 @@ dependencies = [
 
 [[package]]
 name = "host-reference-rtf"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "host-reference-core",
  "rtf-parser",
@@ -1703,7 +1703,7 @@ dependencies = [
 
 [[package]]
 name = "host-reference-vector"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "host-reference-core",
  "roxmltree 0.21.1",
