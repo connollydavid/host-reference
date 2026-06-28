@@ -1630,6 +1630,7 @@ name = "host-reference-ocr"
 version = "0.1.1"
 dependencies = [
  "host-reference-core",
+ "tempfile",
 ]
 
 [[package]]
@@ -1646,6 +1647,7 @@ name = "host-reference-openscad"
 version = "0.1.1"
 dependencies = [
  "host-reference-core",
+ "tempfile",
 ]
 
 [[package]]

@@ -7,3 +7,5 @@ license.workspace = true
 
 [dependencies]
 host-reference-core = { path = "../core" }
+# Stage the source at an O_EXCL random temp path, not a predictable shared one (finding 10).
+tempfile = "3"

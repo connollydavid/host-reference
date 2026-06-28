@@ -11,6 +11,8 @@ use std::io::Write;
 use std::path::PathBuf;
 use std::process::Command;
 
+use tempfile::Builder;
+
 use host_reference_core::{
     content_id, count_tokens, Caps, Error, Modality, Normalizer, Semantic, Source, SourceMap, Span,
     SpanSelector, Tier0, Tier1,
@@ -76,16 +78,20 @@ fn helper_path() -> PathBuf {
 
 fn recognise(source: &Source) -> Result<String, Error> {
     let ext = source.hint.unwrap_or("png");
-    let path =
-        std::env::temp_dir().join(format!("host-reference-ocr-{}.{ext}", content_id(source.bytes)));
-    std::fs::File::create(&path)
-        .and_then(|mut f| f.write_all(source.bytes))
+    // An O_EXCL temp file with a random name, removed on drop: no predictable shared path a symlink
+    // could pre-empt, and no collision between two concurrent calls on the same bytes (finding 10).
+    let mut file = Builder::new()
+        .prefix("host-reference-ocr-")
+        .suffix(&format!(".{ext}"))
+        .tempfile()
         .map_err(|e| Error::Parse(format!("ocr: staging image: {e}")))?;
+    file.write_all(source.bytes).map_err(|e| Error::Parse(format!("ocr: staging image: {e}")))?;
 
-    let result = Command::new(helper_path()).arg(&path).output();
-    let _ = std::fs::remove_file(&path);
-
-    let output = result.map_err(|e| Error::Parse(format!("ocr: cannot run helper: {e}")))?;
+    // `file` is held open across the helper run (the helper reads it by path) and removed on drop.
+    let output = Command::new(helper_path())
+        .arg(file.path())
+        .output()
+        .map_err(|e| Error::Parse(format!("ocr: cannot run helper: {e}")))?;
     if !output.status.success() {
         return Err(Error::Parse(format!(
             "ocr: helper failed: {}",

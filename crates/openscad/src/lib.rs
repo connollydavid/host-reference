@@ -11,6 +11,8 @@ use std::io::Write;
 use std::path::PathBuf;
 use std::process::Command;
 
+use tempfile::Builder;
+
 use host_reference_core::{
     content_id, count_tokens, Caps, Error, Modality, Normalizer, Semantic, Source, SourceMap, Span,
     SpanSelector, Tier0, Tier1,
@@ -85,16 +87,20 @@ fn helper_path() -> PathBuf {
 }
 
 fn run_helper(source: &Source) -> Result<String, Error> {
-    let path =
-        std::env::temp_dir().join(format!("host-reference-openscad-{}.scad", content_id(source.bytes)));
-    std::fs::File::create(&path)
-        .and_then(|mut f| f.write_all(source.bytes))
+    // An O_EXCL temp file with a random name, removed on drop: no predictable shared path a symlink
+    // could pre-empt, and no collision between two concurrent calls on the same bytes (finding 10).
+    let mut file = Builder::new()
+        .prefix("host-reference-openscad-")
+        .suffix(".scad")
+        .tempfile()
         .map_err(|e| Error::Parse(format!("openscad: staging source: {e}")))?;
+    file.write_all(source.bytes).map_err(|e| Error::Parse(format!("openscad: staging source: {e}")))?;
 
-    let result = Command::new(helper_path()).arg(&path).output();
-    let _ = std::fs::remove_file(&path);
-
-    let output = result.map_err(|e| Error::Parse(format!("openscad: cannot run helper: {e}")))?;
+    // `file` is held open across the helper run (the helper reads it by path) and removed on drop.
+    let output = Command::new(helper_path())
+        .arg(file.path())
+        .output()
+        .map_err(|e| Error::Parse(format!("openscad: cannot run helper: {e}")))?;
     if !output.status.success() {
         return Err(Error::Parse(format!(
             "openscad: helper failed: {}",
