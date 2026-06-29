@@ -3,11 +3,8 @@
 //! stable) rather than committing binaries, runs the normaliser, and asserts the canonical tier-0
 //! equals the committed golden. Never auto-blessed; set `HOST_REFERENCE_BLESS=1` to rewrite a golden.
 
-use std::fs;
 use std::io::{Cursor, Write};
-use std::path::Path;
 
-use host_reference_core::{serialize_tier0, Normalizer, Source};
 use host_reference_office::OfficeNormalizer;
 use zip::write::{SimpleFileOptions, ZipWriter};
 use zip::CompressionMethod;
@@ -201,33 +198,35 @@ fn gen_pptx() -> Vec<u8> {
     ])
 }
 
-fn check(dir: &str, bytes: &[u8], hint: &str) {
-    let base = Path::new(env!("CARGO_MANIFEST_DIR")).join("fixtures").join(dir);
-    let tier0 = OfficeNormalizer.skeleton(&Source { bytes, hint: Some(hint) }).expect("skeleton");
-    let got = serialize_tier0(&tier0);
-
-    let golden = base.join("expected.golden");
-    if std::env::var("HOST_REFERENCE_BLESS").is_ok() {
-        fs::create_dir_all(&base).expect("create fixture dir");
-        fs::write(&golden, &got).expect("write golden");
-        return;
-    }
-    let want = fs::read_to_string(&golden)
-        .expect("read golden; bless it first with HOST_REFERENCE_BLESS=1");
-    assert_eq!(got, want, "tier-0 drifted from the golden for fixture `{dir}`");
-}
-
 #[test]
 fn docx_report_shape() {
-    check("report", &gen_docx(), "docx");
+    host_reference_testkit::check_bytes(
+        env!("CARGO_MANIFEST_DIR"),
+        "report",
+        &gen_docx(),
+        "docx",
+        &OfficeNormalizer,
+    );
 }
 
 #[test]
 fn xlsx_workbook_shape() {
-    check("workbook", &gen_xlsx(), "xlsx");
+    host_reference_testkit::check_bytes(
+        env!("CARGO_MANIFEST_DIR"),
+        "workbook",
+        &gen_xlsx(),
+        "xlsx",
+        &OfficeNormalizer,
+    );
 }
 
 #[test]
 fn pptx_deck_shape() {
-    check("deck", &gen_pptx(), "pptx");
+    host_reference_testkit::check_bytes(
+        env!("CARGO_MANIFEST_DIR"),
+        "deck",
+        &gen_pptx(),
+        "pptx",
+        &OfficeNormalizer,
+    );
 }

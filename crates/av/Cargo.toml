@@ -9,3 +9,6 @@ license.workspace = true
 host-reference-core = { path = "../core" }
 symphonia = "0.5"
 mp4 = "0.14"
+
+[dev-dependencies]
+host-reference-testkit = { path = "../testkit" }

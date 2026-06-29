@@ -16,3 +16,6 @@ gcode = "0.7"
 threemf = "0.8"
 ruststep = "0.4"
 roxmltree = "0.20"
+
+[dev-dependencies]
+host-reference-testkit = { path = "../testkit" }

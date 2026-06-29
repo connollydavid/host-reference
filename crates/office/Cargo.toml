@@ -10,5 +10,6 @@ host-reference-core = { path = "../core", features = ["archive"] }
 undoc = "0.5"
 
 [dev-dependencies]
+host-reference-testkit = { path = "../testkit" }
 # The conformance test builds minimal OOXML zips in memory rather than committing binaries.
 zip = { version = "2", default-features = false, features = ["deflate"] }

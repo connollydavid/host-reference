@@ -8,3 +8,6 @@ license.workspace = true
 [dependencies]
 host-reference-core = { path = "../core" }
 orgize = "0.9"
+
+[dev-dependencies]
+host-reference-testkit = { path = "../testkit" }

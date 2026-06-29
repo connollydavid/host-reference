@@ -1490,6 +1490,7 @@ dependencies = [
  "asciidork-parser",
  "bumpalo",
  "host-reference-core",
+ "host-reference-testkit",
 ]
 
 [[package]]
@@ -1497,6 +1498,7 @@ name = "host-reference-av"
 version = "0.1.2"
 dependencies = [
  "host-reference-core",
+ "host-reference-testkit",
  "mp4",
  "symphonia",
 ]
@@ -1507,6 +1509,7 @@ version = "0.1.2"
 dependencies = [
  "biblatex",
  "host-reference-core",
+ "host-reference-testkit",
 ]
 
 [[package]]
@@ -1515,6 +1518,7 @@ version = "0.1.2"
 dependencies = [
  "calcard",
  "host-reference-core",
+ "host-reference-testkit",
 ]
 
 [[package]]
@@ -1524,6 +1528,7 @@ dependencies = [
  "arrow",
  "bytes",
  "host-reference-core",
+ "host-reference-testkit",
  "parquet",
 ]
 
@@ -1533,6 +1538,7 @@ version = "0.1.2"
 dependencies = [
  "dotenvy",
  "host-reference-core",
+ "host-reference-testkit",
  "java-properties",
  "rust-ini",
 ]
@@ -1552,6 +1558,7 @@ version = "0.1.2"
 dependencies = [
  "csv",
  "host-reference-core",
+ "host-reference-testkit",
  "roxmltree 0.21.1",
  "serde_json",
  "serde_norway",
@@ -1564,6 +1571,7 @@ version = "0.1.2"
 dependencies = [
  "gerber_parser",
  "host-reference-core",
+ "host-reference-testkit",
  "lexpr",
  "roxmltree 0.20.0",
 ]
@@ -1573,6 +1581,7 @@ name = "host-reference-epub"
 version = "0.1.2"
 dependencies = [
  "host-reference-core",
+ "host-reference-testkit",
  "rbook",
  "zip 2.4.2",
 ]
@@ -1585,6 +1594,7 @@ dependencies = [
  "gcode",
  "gltf",
  "host-reference-core",
+ "host-reference-testkit",
  "ply-rs-bw",
  "roxmltree 0.20.0",
  "ruststep",
@@ -1598,6 +1608,7 @@ name = "host-reference-html"
 version = "0.1.2"
 dependencies = [
  "host-reference-core",
+ "host-reference-testkit",
  "htmd",
 ]
 
@@ -1606,6 +1617,7 @@ name = "host-reference-image"
 version = "0.1.2"
 dependencies = [
  "host-reference-core",
+ "host-reference-testkit",
  "image",
  "kamadak-exif",
 ]
@@ -1615,6 +1627,7 @@ name = "host-reference-mail"
 version = "0.1.2"
 dependencies = [
  "host-reference-core",
+ "host-reference-testkit",
  "mail-parser",
 ]
 
@@ -1623,6 +1636,7 @@ name = "host-reference-netlist"
 version = "0.1.2"
 dependencies = [
  "host-reference-core",
+ "host-reference-testkit",
 ]
 
 [[package]]
@@ -1630,6 +1644,7 @@ name = "host-reference-ocr"
 version = "0.1.2"
 dependencies = [
  "host-reference-core",
+ "host-reference-testkit",
  "tempfile",
 ]
 
@@ -1638,6 +1653,7 @@ name = "host-reference-office"
 version = "0.1.2"
 dependencies = [
  "host-reference-core",
+ "host-reference-testkit",
  "undoc",
  "zip 2.4.2",
 ]
@@ -1647,6 +1663,7 @@ name = "host-reference-openscad"
 version = "0.1.2"
 dependencies = [
  "host-reference-core",
+ "host-reference-testkit",
  "tempfile",
 ]
 
@@ -1655,6 +1672,7 @@ name = "host-reference-org"
 version = "0.1.2"
 dependencies = [
  "host-reference-core",
+ "host-reference-testkit",
  "orgize",
 ]
 
@@ -1676,6 +1694,7 @@ name = "host-reference-pdf"
 version = "0.1.2"
 dependencies = [
  "host-reference-core",
+ "host-reference-testkit",
  "lopdf",
  "pdf-extract",
 ]
@@ -1685,6 +1704,7 @@ name = "host-reference-prose"
 version = "0.1.2"
 dependencies = [
  "host-reference-core",
+ "host-reference-testkit",
 ]
 
 [[package]]
@@ -1693,6 +1713,7 @@ version = "0.1.2"
 dependencies = [
  "document_tree",
  "host-reference-core",
+ "host-reference-testkit",
  "rst_parser",
 ]
 
@@ -1701,7 +1722,15 @@ name = "host-reference-rtf"
 version = "0.1.2"
 dependencies = [
  "host-reference-core",
+ "host-reference-testkit",
  "rtf-parser",
+]
+
+[[package]]
+name = "host-reference-testkit"
+version = "0.1.2"
+dependencies = [
+ "host-reference-core",
 ]
 
 [[package]]
@@ -1709,6 +1738,7 @@ name = "host-reference-vector"
 version = "0.1.2"
 dependencies = [
  "host-reference-core",
+ "host-reference-testkit",
  "roxmltree 0.21.1",
 ]
 

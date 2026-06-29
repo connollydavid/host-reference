@@ -2,65 +2,92 @@
 //! run the normaliser, serialise tier-0 canonically, assert it equals the committed golden byte
 //! for byte. Never auto-blessed; set `HOST_REFERENCE_BLESS=1` to rewrite a golden deliberately.
 
-use std::fs;
-use std::path::Path;
-
-use host_reference_core::{serialize_tier0, Normalizer, Source};
 use host_reference_data::DataNormalizer;
-
-fn check(dir: &str, input: &str, hint: &str) {
-    let base = Path::new(env!("CARGO_MANIFEST_DIR")).join("fixtures").join(dir);
-    let bytes = fs::read(base.join(input)).expect("read fixture input");
-    let tier0 =
-        DataNormalizer.skeleton(&Source { bytes: &bytes, hint: Some(hint) }).expect("skeleton");
-    let got = serialize_tier0(&tier0);
-
-    let golden = base.join("expected.golden");
-    if std::env::var("HOST_REFERENCE_BLESS").is_ok() {
-        fs::write(&golden, &got).expect("write golden");
-        return;
-    }
-    let want = fs::read_to_string(&golden)
-        .expect("read golden; bless it first with HOST_REFERENCE_BLESS=1");
-    assert_eq!(got, want, "tier-0 drifted from the golden for fixture `{dir}`");
-}
 
 #[test]
 fn json_object_shape() {
-    check("object", "input.json", "json");
+    host_reference_testkit::check_file(
+        env!("CARGO_MANIFEST_DIR"),
+        "object",
+        "input.json",
+        "json",
+        &DataNormalizer,
+    );
 }
 
 #[test]
 fn csv_table_shape() {
-    check("table", "input.csv", "csv");
+    host_reference_testkit::check_file(
+        env!("CARGO_MANIFEST_DIR"),
+        "table",
+        "input.csv",
+        "csv",
+        &DataNormalizer,
+    );
 }
 
 #[test]
 fn yaml_config_shape() {
-    check("config", "input.yaml", "yaml");
+    host_reference_testkit::check_file(
+        env!("CARGO_MANIFEST_DIR"),
+        "config",
+        "input.yaml",
+        "yaml",
+        &DataNormalizer,
+    );
 }
 
 #[test]
 fn xml_rss_feed_shape() {
-    check("feed", "input.xml", "xml");
+    host_reference_testkit::check_file(
+        env!("CARGO_MANIFEST_DIR"),
+        "feed",
+        "input.xml",
+        "xml",
+        &DataNormalizer,
+    );
 }
 
 #[test]
 fn ndjson_stream_shape() {
-    check("stream", "input.ndjson", "ndjson");
+    host_reference_testkit::check_file(
+        env!("CARGO_MANIFEST_DIR"),
+        "stream",
+        "input.ndjson",
+        "ndjson",
+        &DataNormalizer,
+    );
 }
 
 #[test]
 fn tsv_grid_shape() {
-    check("grid", "input.tsv", "tsv");
+    host_reference_testkit::check_file(
+        env!("CARGO_MANIFEST_DIR"),
+        "grid",
+        "input.tsv",
+        "tsv",
+        &DataNormalizer,
+    );
 }
 
 #[test]
 fn ipynb_notebook_shape() {
-    check("notebook", "input.ipynb", "ipynb");
+    host_reference_testkit::check_file(
+        env!("CARGO_MANIFEST_DIR"),
+        "notebook",
+        "input.ipynb",
+        "ipynb",
+        &DataNormalizer,
+    );
 }
 
 #[test]
 fn toml_manifest_shape() {
-    check("manifest", "input.toml", "toml");
+    host_reference_testkit::check_file(
+        env!("CARGO_MANIFEST_DIR"),
+        "manifest",
+        "input.toml",
+        "toml",
+        &DataNormalizer,
+    );
 }

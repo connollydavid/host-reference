@@ -10,3 +10,6 @@ host-reference-core = { path = "../core" }
 rust-ini = "0.21"
 java-properties = "2"
 dotenvy = "0.15"
+
+[dev-dependencies]
+host-reference-testkit = { path = "../testkit" }

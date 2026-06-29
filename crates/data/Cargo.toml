@@ -12,3 +12,6 @@ csv = "1"
 serde_norway = "0.9.42"
 roxmltree = "0.21.1"
 toml = "1"
+
+[dev-dependencies]
+host-reference-testkit = { path = "../testkit" }

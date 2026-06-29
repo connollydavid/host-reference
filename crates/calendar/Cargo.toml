@@ -8,3 +8,6 @@ license.workspace = true
 [dependencies]
 host-reference-core = { path = "../core" }
 calcard = "0.3"
+
+[dev-dependencies]
+host-reference-testkit = { path = "../testkit" }

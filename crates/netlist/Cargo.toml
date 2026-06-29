@@ -7,3 +7,6 @@ license.workspace = true
 
 [dependencies]
 host-reference-core = { path = "../core" }
+
+[dev-dependencies]
+host-reference-testkit = { path = "../testkit" }

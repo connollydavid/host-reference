@@ -10,3 +10,6 @@ host-reference-core = { path = "../core" }
 asciidork-parser = "0.38"
 asciidork-ast = "0.38"
 bumpalo = "3"
+
+[dev-dependencies]
+host-reference-testkit = { path = "../testkit" }

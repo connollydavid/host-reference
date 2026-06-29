@@ -9,3 +9,6 @@ license.workspace = true
 host-reference-core = { path = "../core" }
 rst_parser = "0.4"
 document_tree = "0.4"
+
+[dev-dependencies]
+host-reference-testkit = { path = "../testkit" }

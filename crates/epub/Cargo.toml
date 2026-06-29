@@ -10,4 +10,5 @@ host-reference-core = { path = "../core", features = ["archive"] }
 rbook = "0.7"
 
 [dev-dependencies]
+host-reference-testkit = { path = "../testkit" }
 zip = { version = "2", default-features = false, features = ["deflate"] }

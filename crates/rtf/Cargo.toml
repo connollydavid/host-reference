@@ -8,3 +8,6 @@ license.workspace = true
 [dependencies]
 host-reference-core = { path = "../core" }
 rtf-parser = "0.4"
+
+[dev-dependencies]
+host-reference-testkit = { path = "../testkit" }

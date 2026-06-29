@@ -3,10 +3,6 @@
 //! than committing a binary, runs the normaliser, and asserts the canonical tier-0 equals the golden.
 //! Never auto-blessed; set `HOST_REFERENCE_BLESS=1` to rewrite a golden.
 
-use std::fs;
-use std::path::Path;
-
-use host_reference_core::{serialize_tier0, Normalizer, Source};
 use host_reference_pdf::PdfNormalizer;
 use lopdf::content::{Content, Operation};
 use lopdf::{dictionary, Document, Object, Stream};
@@ -55,23 +51,13 @@ fn gen_pdf() -> Vec<u8> {
     buf
 }
 
-fn check(dir: &str, bytes: &[u8], hint: &str) {
-    let base = Path::new(env!("CARGO_MANIFEST_DIR")).join("fixtures").join(dir);
-    let tier0 = PdfNormalizer.skeleton(&Source { bytes, hint: Some(hint) }).expect("skeleton");
-    let got = serialize_tier0(&tier0);
-
-    let golden = base.join("expected.golden");
-    if std::env::var("HOST_REFERENCE_BLESS").is_ok() {
-        fs::create_dir_all(&base).expect("create fixture dir");
-        fs::write(&golden, &got).expect("write golden");
-        return;
-    }
-    let want = fs::read_to_string(&golden)
-        .expect("read golden; bless it first with HOST_REFERENCE_BLESS=1");
-    assert_eq!(got, want, "tier-0 drifted from the golden for fixture `{dir}`");
-}
-
 #[test]
 fn pdf_datasheet_shape() {
-    check("datasheet", &gen_pdf(), "pdf");
+    host_reference_testkit::check_bytes(
+        env!("CARGO_MANIFEST_DIR"),
+        "datasheet",
+        &gen_pdf(),
+        "pdf",
+        &PdfNormalizer,
+    );
 }

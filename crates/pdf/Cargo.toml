@@ -9,3 +9,6 @@ license.workspace = true
 host-reference-core = { path = "../core" }
 lopdf = "0.42"
 pdf-extract = "0.12"
+
+[dev-dependencies]
+host-reference-testkit = { path = "../testkit" }

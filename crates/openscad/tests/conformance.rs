@@ -6,9 +6,8 @@
 //! helper at arm's length. Never auto-blessed; set `HOST_REFERENCE_BLESS=1` to rewrite a golden.
 
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
-use host_reference_core::{serialize_tier0, Normalizer, Source};
 use host_reference_openscad::OpenscadNormalizer;
 
 /// Write a stub standing in for `host-reference-openscad-helper`: it checks a source path was passed
@@ -29,25 +28,14 @@ fn write_stub() -> PathBuf {
     stub
 }
 
-fn check(dir: &str, input: &str, hint: &str) {
-    std::env::set_var("HOST_REFERENCE_OPENSCAD_HELPER", write_stub());
-    let base = Path::new(env!("CARGO_MANIFEST_DIR")).join("fixtures").join(dir);
-    let bytes = fs::read(base.join(input)).expect("read fixture input");
-    let tier0 =
-        OpenscadNormalizer.skeleton(&Source { bytes: &bytes, hint: Some(hint) }).expect("skeleton");
-    let got = serialize_tier0(&tier0);
-
-    let golden = base.join("expected.golden");
-    if std::env::var("HOST_REFERENCE_BLESS").is_ok() {
-        fs::write(&golden, &got).expect("write golden");
-        return;
-    }
-    let want = fs::read_to_string(&golden)
-        .expect("read golden; bless it first with HOST_REFERENCE_BLESS=1");
-    assert_eq!(got, want, "tier-0 drifted from the golden for fixture `{dir}`");
-}
-
 #[test]
 fn model_tallies_helper_kinds() {
-    check("model", "input.scad", "scad");
+    std::env::set_var("HOST_REFERENCE_OPENSCAD_HELPER", write_stub());
+    host_reference_testkit::check_file(
+        env!("CARGO_MANIFEST_DIR"),
+        "model",
+        "input.scad",
+        "scad",
+        &OpenscadNormalizer,
+    );
 }

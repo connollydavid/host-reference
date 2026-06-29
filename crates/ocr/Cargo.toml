@@ -9,3 +9,6 @@ license.workspace = true
 host-reference-core = { path = "../core" }
 # Stage the image at an O_EXCL random temp path, not a predictable shared one (finding 10).
 tempfile = "3"
+
+[dev-dependencies]
+host-reference-testkit = { path = "../testkit" }

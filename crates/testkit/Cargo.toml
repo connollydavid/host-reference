@@ -1,0 +1,9 @@
+[package]
+name = "host-reference-testkit"
+description = "host-reference shared conformance harness: the golden bless-or-compare protocol"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+host-reference-core = { path = "../core" }
