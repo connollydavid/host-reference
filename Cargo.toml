@@ -3,7 +3,7 @@ resolver = "2"
 members = ["crates/core", "crates/cli", "crates/prose", "crates/data", "crates/config", "crates/calendar", "crates/columnar", "crates/bibtex", "crates/rst", "crates/org", "crates/asciidoc", "crates/rtf", "crates/epub", "crates/office", "crates/mail", "crates/pdf", "crates/geometry", "crates/eda", "crates/image", "crates/av", "crates/ocr", "crates/openscad", "crates/overlay", "crates/html", "crates/vector", "crates/netlist", "crates/testkit"]
 
 [workspace.package]
-version = "0.1.2"
+version = "0.1.3"
 edition = "2021"
 license = "Unlicense"
 
