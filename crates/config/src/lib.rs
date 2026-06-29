@@ -5,8 +5,8 @@
 //! The source map is whole-document for now.
 
 use host_reference_core::{
-    content_id, count_tokens, Caps, Error, Modality, Normalizer, Semantic, Source, SourceMap, Span,
-    SpanSelector, Tier0, Tier1,
+    content_id, Caps, Error, Modality, Normalizer, Semantic, Source, SourceMap, Span, SpanSelector,
+    Tier0, Tier1,
 };
 
 pub struct ConfigNormalizer;
@@ -28,41 +28,32 @@ impl Normalizer for ConfigNormalizer {
         Caps { round_trip: true, write_back: false, semantic: Semantic::Partial, ocr: false }
     }
 
-    fn detect(&self, source: &Source) -> bool {
-        matches!(source.hint, Some("ini" | "properties" | "env"))
+    fn extensions(&self) -> &'static [&'static str] {
+        &["ini", "properties", "env"]
     }
 
     fn skeleton(&self, source: &Source) -> Result<Tier0, Error> {
         let text = self.text(source)?;
-        let id = content_id(source.bytes);
         let outline = match source.hint {
             Some("properties") => properties_shape(text)?,
             Some("env") => env_shape(text)?,
             _ => ini_shape(text)?,
         };
-        Ok(Tier0 {
-            raw_tokens: count_tokens(text),
-            normalised_tokens: count_tokens(&outline),
-            markdown: outline,
-            source_map: SourceMap {
-                spans: vec![Span { source: id, origin: 0..source.bytes.len() }],
-            },
-        })
+        Ok(host_reference_core::Tier0::whole(source.bytes, outline))
     }
 
     fn view(&self, source: &Source, select: &SpanSelector) -> Result<Tier1, Error> {
         let text = self.text(source)?;
         let id = content_id(source.bytes);
-        let (start, end) = match select {
+        match select {
             SpanSelector::CharOffset { start, len } => {
-                host_reference_core::char_offset_window(text, *start, *len)
+                Ok(host_reference_core::char_offset_view(text, &id, *start, *len))
             }
-            _ => (0, text.len()),
-        };
-        Ok(Tier1 {
-            markdown: text[start..end].to_string(),
-            source_map: SourceMap { spans: vec![Span { source: id, origin: start..end }] },
-        })
+            _ => Ok(Tier1 {
+                markdown: text.to_string(),
+                source_map: SourceMap { spans: vec![Span { source: id, origin: 0..text.len() }] },
+            }),
+        }
     }
 }
 

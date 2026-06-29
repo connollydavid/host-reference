@@ -4,8 +4,8 @@
 //! whole-document for now.
 
 use host_reference_core::{
-    content_id, count_tokens, Caps, Error, Modality, Normalizer, Semantic, Source, SourceMap, Span,
-    SpanSelector, Tier0, Tier1,
+    content_id, Caps, Error, Modality, Normalizer, Semantic, Source, SourceMap, Span, SpanSelector,
+    Tier0, Tier1,
 };
 use rtf_parser::RtfDocument;
 
@@ -28,23 +28,15 @@ impl Normalizer for RtfNormalizer {
         Caps { round_trip: false, write_back: false, semantic: Semantic::None, ocr: false }
     }
 
-    fn detect(&self, source: &Source) -> bool {
-        matches!(source.hint, Some("rtf"))
+    fn extensions(&self) -> &'static [&'static str] {
+        &["rtf"]
     }
 
     fn skeleton(&self, source: &Source) -> Result<Tier0, Error> {
         let text = self.text(source)?;
-        let id = content_id(source.bytes);
         let plain = plain_text(text)?;
         let outline = rtf_shape(text, &plain);
-        Ok(Tier0 {
-            raw_tokens: count_tokens(text),
-            normalised_tokens: count_tokens(&outline),
-            markdown: outline,
-            source_map: SourceMap {
-                spans: vec![Span { source: id, origin: 0..source.bytes.len() }],
-            },
-        })
+        Ok(host_reference_core::Tier0::whole(source.bytes, outline))
     }
 
     fn view(&self, source: &Source, _select: &SpanSelector) -> Result<Tier1, Error> {

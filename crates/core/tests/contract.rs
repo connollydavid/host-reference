@@ -20,6 +20,10 @@ impl Normalizer for DocReader {
         Caps { round_trip: true, write_back: true, semantic: Semantic::None, ocr: false }
     }
 
+    fn extensions(&self) -> &'static [&'static str] {
+        &[]
+    }
+
     fn detect(&self, source: &Source) -> bool {
         !matches!(source.hint, None | Some(""))
     }
@@ -78,8 +82,8 @@ impl Normalizer for ReadOnly {
     fn capabilities(&self) -> Caps {
         Caps::default()
     }
-    fn detect(&self, source: &Source) -> bool {
-        source.hint == Some("ro")
+    fn extensions(&self) -> &'static [&'static str] {
+        &["ro"]
     }
     fn skeleton(&self, source: &Source) -> Result<Tier0, Error> {
         Ok(Tier0 {
@@ -115,8 +119,8 @@ impl Normalizer for GuardedReader {
     fn capabilities(&self) -> Caps {
         Caps::default()
     }
-    fn detect(&self, source: &Source) -> bool {
-        source.hint == Some("guarded")
+    fn extensions(&self) -> &'static [&'static str] {
+        &["guarded"]
     }
     fn skeleton(&self, source: &Source) -> Result<Tier0, Error> {
         if source.bytes.len() > GUARD_BOUND {

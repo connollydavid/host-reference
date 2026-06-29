@@ -7,8 +7,7 @@
 use std::io::Cursor;
 
 use host_reference_core::{
-    content_id, count_tokens, guard_panic, Caps, Error, Modality, Normalizer, Semantic, Source,
-    SourceMap, Span, SpanSelector, Tier0, Tier1,
+    guard_panic, Caps, Error, Modality, Normalizer, Semantic, Source, Tier0,
 };
 use symphonia::core::formats::FormatOptions;
 use symphonia::core::io::MediaSourceStream;
@@ -26,31 +25,13 @@ impl Normalizer for AvNormalizer {
         Caps { round_trip: false, write_back: false, semantic: Semantic::None, ocr: false }
     }
 
-    fn detect(&self, source: &Source) -> bool {
-        matches!(source.hint, Some("wav" | "flac" | "ogg" | "oga" | "mp4" | "mov" | "m4v" | "m4a"))
+    fn extensions(&self) -> &'static [&'static str] {
+        &["wav", "flac", "ogg", "oga", "mp4", "mov", "m4v", "m4a"]
     }
 
     fn skeleton(&self, source: &Source) -> Result<Tier0, Error> {
-        let id = content_id(source.bytes);
         let outline = shape(source)?;
-        Ok(Tier0 {
-            raw_tokens: source.bytes.len(),
-            normalised_tokens: count_tokens(&outline),
-            markdown: outline,
-            source_map: SourceMap {
-                spans: vec![Span { source: id, origin: 0..source.bytes.len() }],
-            },
-        })
-    }
-
-    fn view(&self, source: &Source, _select: &SpanSelector) -> Result<Tier1, Error> {
-        let id = content_id(source.bytes);
-        Ok(Tier1 {
-            markdown: shape(source)?,
-            source_map: SourceMap {
-                spans: vec![Span { source: id, origin: 0..source.bytes.len() }],
-            },
-        })
+        Ok(host_reference_core::Tier0::whole(source.bytes, outline))
     }
 }
 

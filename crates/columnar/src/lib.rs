@@ -8,10 +8,7 @@ use std::io::Cursor;
 
 use arrow::ipc::reader::FileReader as ArrowFileReader;
 use bytes::Bytes;
-use host_reference_core::{
-    content_id, count_tokens, Caps, Error, Modality, Normalizer, Semantic, Source, SourceMap, Span,
-    SpanSelector, Tier0, Tier1,
-};
+use host_reference_core::{Caps, Error, Modality, Normalizer, Semantic, Source, Tier0};
 use parquet::file::reader::{FileReader as _, SerializedFileReader};
 
 pub struct ColumnarNormalizer;
@@ -27,32 +24,13 @@ impl Normalizer for ColumnarNormalizer {
         Caps { round_trip: false, write_back: false, semantic: Semantic::Full, ocr: false }
     }
 
-    fn detect(&self, source: &Source) -> bool {
-        matches!(source.hint, Some("parquet" | "arrow" | "feather" | "ipc"))
+    fn extensions(&self) -> &'static [&'static str] {
+        &["parquet", "arrow", "feather", "ipc"]
     }
 
     fn skeleton(&self, source: &Source) -> Result<Tier0, Error> {
-        let id = content_id(source.bytes);
         let outline = shape(source)?;
-        let lossy = String::from_utf8_lossy(source.bytes);
-        Ok(Tier0 {
-            raw_tokens: count_tokens(&lossy),
-            normalised_tokens: count_tokens(&outline),
-            markdown: outline,
-            source_map: SourceMap {
-                spans: vec![Span { source: id, origin: 0..source.bytes.len() }],
-            },
-        })
-    }
-
-    fn view(&self, source: &Source, _select: &SpanSelector) -> Result<Tier1, Error> {
-        let id = content_id(source.bytes);
-        Ok(Tier1 {
-            markdown: shape(source)?,
-            source_map: SourceMap {
-                spans: vec![Span { source: id, origin: 0..source.bytes.len() }],
-            },
-        })
+        Ok(host_reference_core::Tier0::whole(source.bytes, outline))
     }
 }
 

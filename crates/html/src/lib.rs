@@ -24,35 +24,6 @@ impl HtmlNormalizer {
     }
 }
 
-/// The heading outline of markdown: each ATX heading as an indented bullet.
-fn heading_outline(md: &str) -> String {
-    let mut out = String::new();
-    // Track fenced code blocks: a line whose trimmed form opens with three or more backticks
-    // toggles the fence, and a `#` line inside one is code, not a heading.
-    let mut in_fence = false;
-    for line in md.lines() {
-        let t = line.trim_start();
-        if t.starts_with("```") {
-            in_fence = !in_fence;
-            continue;
-        }
-        if in_fence {
-            continue;
-        }
-        let hashes = t.bytes().take_while(|b| *b == b'#').count();
-        if hashes >= 1 && t.as_bytes().get(hashes) == Some(&b' ') {
-            out.push_str(&"  ".repeat(hashes - 1));
-            out.push_str("- ");
-            out.push_str(t[hashes + 1..].trim());
-            out.push('\n');
-        }
-    }
-    if out.is_empty() {
-        out.push_str("- (no headings)\n");
-    }
-    out
-}
-
 impl Normalizer for HtmlNormalizer {
     fn modality(&self) -> Modality {
         Modality::Prose
@@ -64,17 +35,20 @@ impl Normalizer for HtmlNormalizer {
         Caps { round_trip: false, write_back: false, semantic: Semantic::Partial, ocr: false }
     }
 
-    fn detect(&self, source: &Source) -> bool {
-        matches!(source.hint, Some("html" | "htm" | "xhtml"))
+    fn extensions(&self) -> &'static [&'static str] {
+        &["html", "htm", "xhtml"]
     }
 
     fn skeleton(&self, source: &Source) -> Result<Tier0, Error> {
-        let raw = std::str::from_utf8(source.bytes)
-            .map_err(|e| Error::Parse(format!("not UTF-8: {e}")))?;
+        // Validate UTF-8 up front; the raw-token cost then comes from the shared policy.
+        std::str::from_utf8(source.bytes).map_err(|e| Error::Parse(format!("not UTF-8: {e}")))?;
         let md = self.markdown(source)?;
-        let outline = heading_outline(&md);
+        let (mut outline, _) = host_reference_core::markdown_heading_outline(&md);
+        if outline.is_empty() {
+            outline.push_str("- (no headings)\n");
+        }
         Ok(Tier0 {
-            raw_tokens: count_tokens(raw),
+            raw_tokens: host_reference_core::raw_tokens(source.bytes),
             normalised_tokens: count_tokens(&outline),
             markdown: outline,
             source_map: SourceMap {

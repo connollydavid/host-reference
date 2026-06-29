@@ -243,6 +243,9 @@ mod tests {
         fn capabilities(&self) -> Caps {
             Caps::default()
         }
+        fn extensions(&self) -> &'static [&'static str] {
+            &["png"]
+        }
         fn detect(&self, _source: &Source) -> bool {
             true
         }

@@ -13,10 +13,7 @@ use std::process::Command;
 
 use tempfile::Builder;
 
-use host_reference_core::{
-    content_id, count_tokens, Caps, Error, Modality, Normalizer, Semantic, Source, SourceMap, Span,
-    SpanSelector, Tier0, Tier1,
-};
+use host_reference_core::{Caps, Error, Modality, Normalizer, Semantic, Source, Tier0};
 
 pub struct OcrNormalizer;
 
@@ -29,34 +26,13 @@ impl Normalizer for OcrNormalizer {
         Caps { round_trip: false, write_back: false, semantic: Semantic::None, ocr: true }
     }
 
-    fn detect(&self, source: &Source) -> bool {
-        matches!(
-            source.hint,
-            Some("png" | "jpg" | "jpeg" | "gif" | "bmp" | "tif" | "tiff" | "webp")
-        )
+    fn extensions(&self) -> &'static [&'static str] {
+        &["png", "jpg", "jpeg", "gif", "bmp", "tif", "tiff", "webp"]
     }
 
     fn skeleton(&self, source: &Source) -> Result<Tier0, Error> {
-        let id = content_id(source.bytes);
         let outline = render(&recognise(source)?, &helper_version()?);
-        Ok(Tier0 {
-            raw_tokens: source.bytes.len(),
-            normalised_tokens: count_tokens(&outline),
-            markdown: outline,
-            source_map: SourceMap {
-                spans: vec![Span { source: id, origin: 0..source.bytes.len() }],
-            },
-        })
-    }
-
-    fn view(&self, source: &Source, _select: &SpanSelector) -> Result<Tier1, Error> {
-        let id = content_id(source.bytes);
-        Ok(Tier1 {
-            markdown: render(&recognise(source)?, &helper_version()?),
-            source_map: SourceMap {
-                spans: vec![Span { source: id, origin: 0..source.bytes.len() }],
-            },
-        })
+        Ok(host_reference_core::Tier0::whole(source.bytes, outline))
     }
 }
 

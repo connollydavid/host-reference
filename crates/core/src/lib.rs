@@ -151,14 +151,28 @@ pub trait Normalizer {
     /// The capabilities this normaliser declares for the kind it reads.
     fn capabilities(&self) -> Caps;
 
-    /// Whether this normaliser handles the given bytes (a content sniff plus the hint).
-    fn detect(&self, source: &Source) -> bool;
+    /// The file extensions this reader claims, declared as data. The default `detect` matches the
+    /// source hint against these, and the registry uses them for an explicit, collision-surfacing
+    /// dispatch rather than a bespoke per-reader match.
+    fn extensions(&self) -> &'static [&'static str];
+
+    /// Whether this normaliser handles the given source. The default matches the hint against
+    /// `extensions`; a reader that sniffs content overrides it.
+    fn detect(&self, source: &Source) -> bool {
+        source.hint.is_some_and(|h| self.extensions().contains(&h))
+    }
 
     /// The always-resident skeleton.
     fn skeleton(&self, source: &Source) -> Result<Tier0, Error>;
 
-    /// A windowed, token-budgeted full slice.
-    fn view(&self, source: &Source, select: &SpanSelector) -> Result<Tier1, Error>;
+    /// A windowed, token-budgeted full slice. The default returns the whole skeleton, the fail-safe
+    /// for a reader whose attested skeleton is already the full content (a metadata tally). A reader
+    /// with a richer view (real windowing, or a fuller text than the skeleton, like PDF) overrides
+    /// it.
+    fn view(&self, source: &Source, _select: &SpanSelector) -> Result<Tier1, Error> {
+        let t0 = self.skeleton(source)?;
+        Ok(Tier1 { markdown: t0.markdown, source_map: t0.source_map })
+    }
 
     /// The reverse direction, where a well-behaved lens exists. The default refuses,
     /// the fail-safe for a kind that declares no write-back.
@@ -186,6 +200,15 @@ pub fn count_tokens(text: &str) -> usize {
     use tiktoken_rs::{o200k_base, CoreBPE};
     static BPE: OnceLock<CoreBPE> = OnceLock::new();
     BPE.get_or_init(|| o200k_base().expect("embedded o200k_base vocab")).encode_ordinary(text).len()
+}
+
+/// The raw-token count of a source, the one policy every reader uses so the saving ratio is
+/// comparable across modalities (the review found three incompatible bases). The source bytes are
+/// read as text (lossily for a binary container) and tokenised; for UTF-8 text this equals
+/// `count_tokens` of the decoded string, and for a binary kind it is the token cost of dumping the
+/// raw bytes, a single consistent basis rather than a per-reader choice.
+pub fn raw_tokens(bytes: &[u8]) -> usize {
+    count_tokens(&String::from_utf8_lossy(bytes))
 }
 
 /// Whether a line is one of the canonical-form section delimiters, the lines a consumer splits on.
@@ -249,6 +272,76 @@ pub fn char_offset_window(text: &str, start: usize, len: usize) -> (usize, usize
     let s = floor_boundary(text, start);
     let e = floor_boundary(text, s.saturating_add(len));
     (s, e)
+}
+
+/// A `CharOffset` windowed view of `text`, the body the text readers all returned by hand. The
+/// window is clamped by `char_offset_window`, and the source map carries the one span it covers.
+pub fn char_offset_view(text: &str, source: &str, start: usize, len: usize) -> Tier1 {
+    let (s, e) = char_offset_window(text, start, len);
+    Tier1 {
+        markdown: text[s..e].to_string(),
+        source_map: SourceMap { spans: vec![Span { source: source.to_string(), origin: s..e }] },
+    }
+}
+
+/// The hash count of an ATX heading line (`#`, `##`, ...), or zero when the line is not a heading.
+pub fn heading_level(line: &str) -> usize {
+    let t = line.trim_start();
+    let hashes = t.bytes().take_while(|b| *b == b'#').count();
+    if hashes >= 1 && t.as_bytes().get(hashes) == Some(&b' ') {
+        hashes
+    } else {
+        0
+    }
+}
+
+/// The title text of an ATX heading line.
+pub fn heading_title(line: &str) -> &str {
+    let t = line.trim_start();
+    let hashes = t.bytes().take_while(|b| *b == b'#').count();
+    t[hashes + 1..].trim()
+}
+
+/// The ATX-heading outline of markdown `text`: the nested `- title` lines and the byte range of
+/// each heading line. Fence-aware: a `#` line inside a triple-backtick block is code, not a heading
+/// (finding 8). Shared by the prose and HTML readers (the latter over its converted markdown).
+pub fn markdown_heading_outline(text: &str) -> (String, Vec<Range<usize>>) {
+    let mut outline = String::new();
+    let mut ranges = Vec::new();
+    let mut offset = 0usize;
+    let mut in_fence = false;
+    for line in text.split_inclusive('\n') {
+        if line.trim_start().starts_with("```") {
+            in_fence = !in_fence;
+        } else if !in_fence {
+            let level = heading_level(line);
+            if level >= 1 {
+                outline.push_str(&"  ".repeat(level - 1));
+                outline.push_str("- ");
+                outline.push_str(heading_title(line));
+                outline.push('\n');
+                ranges.push(offset..offset + line.len());
+            }
+        }
+        offset += line.len();
+    }
+    (outline, ranges)
+}
+
+impl Tier0 {
+    /// A skeleton over the whole document: the markdown outline, a single whole-source span, the raw
+    /// token cost of the source by the shared `raw_tokens` policy, and the normalised token count of
+    /// the outline. The shape every metadata reader built by hand.
+    pub fn whole(bytes: &[u8], markdown: String) -> Tier0 {
+        Tier0 {
+            raw_tokens: raw_tokens(bytes),
+            normalised_tokens: count_tokens(&markdown),
+            markdown,
+            source_map: SourceMap {
+                spans: vec![Span { source: content_id(bytes), origin: 0..bytes.len() }],
+            },
+        }
+    }
 }
 
 /// Run a parser that may panic on a hostile structure, converting an unwind into an explicit

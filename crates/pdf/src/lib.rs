@@ -3,8 +3,8 @@
 //! map is whole-document for now. Scanned PDFs (image-only) belong to the recognition path, not here.
 
 use host_reference_core::{
-    content_id, count_tokens, guard_panic, Caps, Error, Modality, Normalizer, Semantic, Source,
-    SourceMap, Span, SpanSelector, Tier0, Tier1,
+    content_id, guard_panic, Caps, Error, Modality, Normalizer, Semantic, Source, SourceMap, Span,
+    SpanSelector, Tier0, Tier1,
 };
 use lopdf::{Document, Object};
 
@@ -19,22 +19,13 @@ impl Normalizer for PdfNormalizer {
         Caps { round_trip: false, write_back: false, semantic: Semantic::Partial, ocr: false }
     }
 
-    fn detect(&self, source: &Source) -> bool {
-        matches!(source.hint, Some("pdf"))
+    fn extensions(&self) -> &'static [&'static str] {
+        &["pdf"]
     }
 
     fn skeleton(&self, source: &Source) -> Result<Tier0, Error> {
-        let id = content_id(source.bytes);
         let outline = pdf_shape(source.bytes)?;
-        let lossy = String::from_utf8_lossy(source.bytes);
-        Ok(Tier0 {
-            raw_tokens: count_tokens(&lossy),
-            normalised_tokens: count_tokens(&outline),
-            markdown: outline,
-            source_map: SourceMap {
-                spans: vec![Span { source: id, origin: 0..source.bytes.len() }],
-            },
-        })
+        Ok(host_reference_core::Tier0::whole(source.bytes, outline))
     }
 
     fn view(&self, source: &Source, _select: &SpanSelector) -> Result<Tier1, Error> {

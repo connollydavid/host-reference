@@ -9,8 +9,8 @@
 //! prose family with a markdown target.
 
 use host_reference_core::{
-    content_id, count_tokens, Caps, Edit, Error, Modality, Normalizer, Patch, Semantic, Source,
-    SourceMap, Span, SpanSelector, Tier0, Tier1,
+    content_id, Caps, Edit, Error, Modality, Normalizer, Patch, Semantic, Source, SourceMap, Span,
+    SpanSelector, Tier0, Tier1,
 };
 use serde_json::Value;
 
@@ -33,30 +33,15 @@ impl Normalizer for DataNormalizer {
         Caps { round_trip: true, write_back: true, semantic: Semantic::Full, ocr: false }
     }
 
-    fn detect(&self, source: &Source) -> bool {
-        matches!(
-            source.hint,
-            Some(
-                "json"
-                    | "toml"
-                    | "yaml"
-                    | "yml"
-                    | "csv"
-                    | "tsv"
-                    | "tab"
-                    | "xml"
-                    | "rss"
-                    | "atom"
-                    | "ndjson"
-                    | "jsonl"
-                    | "ipynb"
-            )
-        )
+    fn extensions(&self) -> &'static [&'static str] {
+        &[
+            "json", "toml", "yaml", "yml", "csv", "tsv", "tab", "xml", "rss", "atom", "ndjson",
+            "jsonl", "ipynb",
+        ]
     }
 
     fn skeleton(&self, source: &Source) -> Result<Tier0, Error> {
         let text = self.text(source)?;
-        let id = content_id(source.bytes);
         let outline = match source.hint {
             Some("csv") => delimited_shape(text, b',')?,
             Some("tsv" | "tab") => delimited_shape(text, b'\t')?,
@@ -67,30 +52,22 @@ impl Normalizer for DataNormalizer {
             Some("toml") => toml_shape(text)?,
             _ => json_shape(text)?,
         };
-        Ok(Tier0 {
-            raw_tokens: count_tokens(text),
-            normalised_tokens: count_tokens(&outline),
-            markdown: outline,
-            source_map: SourceMap {
-                spans: vec![Span { source: id, origin: 0..source.bytes.len() }],
-            },
-        })
+        Ok(host_reference_core::Tier0::whole(source.bytes, outline))
     }
 
     fn view(&self, source: &Source, select: &SpanSelector) -> Result<Tier1, Error> {
         let text = self.text(source)?;
         let id = content_id(source.bytes);
-        let (start, end) = match select {
+        match select {
             SpanSelector::CharOffset { start, len } => {
-                host_reference_core::char_offset_window(text, *start, *len)
+                Ok(host_reference_core::char_offset_view(text, &id, *start, *len))
             }
             // Other selectors return the whole document until a span-preserving parser lands.
-            _ => (0, text.len()),
-        };
-        Ok(Tier1 {
-            markdown: text[start..end].to_string(),
-            source_map: SourceMap { spans: vec![Span { source: id, origin: start..end }] },
-        })
+            _ => Ok(Tier1 {
+                markdown: text.to_string(),
+                source_map: SourceMap { spans: vec![Span { source: id, origin: 0..text.len() }] },
+            }),
+        }
     }
 
     fn put(&self, source: &Source, edit: &Edit) -> Result<Patch, Error> {

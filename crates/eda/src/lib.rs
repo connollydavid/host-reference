@@ -5,10 +5,7 @@
 
 use std::io::{BufReader, Cursor};
 
-use host_reference_core::{
-    content_id, count_tokens, Caps, Error, Modality, Normalizer, Semantic, Source, SourceMap, Span,
-    SpanSelector, Tier0, Tier1,
-};
+use host_reference_core::{Caps, Error, Modality, Normalizer, Semantic, Source, Tier0};
 
 pub struct EdaNormalizer;
 
@@ -21,35 +18,13 @@ impl Normalizer for EdaNormalizer {
         Caps { round_trip: false, write_back: false, semantic: Semantic::Partial, ocr: false }
     }
 
-    fn detect(&self, source: &Source) -> bool {
-        matches!(
-            source.hint,
-            Some("kicad_sch" | "kicad_pcb" | "kicad" | "gbr" | "gerber" | "eagle" | "brd" | "sch")
-        )
+    fn extensions(&self) -> &'static [&'static str] {
+        &["kicad_sch", "kicad_pcb", "kicad", "gbr", "gerber", "eagle", "brd", "sch"]
     }
 
     fn skeleton(&self, source: &Source) -> Result<Tier0, Error> {
-        let id = content_id(source.bytes);
         let outline = shape(source)?;
-        let lossy = String::from_utf8_lossy(source.bytes);
-        Ok(Tier0 {
-            raw_tokens: count_tokens(&lossy),
-            normalised_tokens: count_tokens(&outline),
-            markdown: outline,
-            source_map: SourceMap {
-                spans: vec![Span { source: id, origin: 0..source.bytes.len() }],
-            },
-        })
-    }
-
-    fn view(&self, source: &Source, _select: &SpanSelector) -> Result<Tier1, Error> {
-        let id = content_id(source.bytes);
-        Ok(Tier1 {
-            markdown: shape(source)?,
-            source_map: SourceMap {
-                spans: vec![Span { source: id, origin: 0..source.bytes.len() }],
-            },
-        })
+        Ok(host_reference_core::Tier0::whole(source.bytes, outline))
     }
 }
 

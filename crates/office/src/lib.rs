@@ -3,10 +3,7 @@
 //! sections, and the embedded-resource count. The full text view is a later refinement. The source
 //! map is whole-document for now.
 
-use host_reference_core::{
-    content_id, count_tokens, Caps, Error, Modality, Normalizer, Semantic, Source, SourceMap, Span,
-    SpanSelector, Tier0, Tier1,
-};
+use host_reference_core::{Caps, Error, Modality, Normalizer, Semantic, Source, Tier0};
 use undoc::{parse_bytes, Block, Paragraph};
 
 pub struct OfficeNormalizer;
@@ -20,32 +17,13 @@ impl Normalizer for OfficeNormalizer {
         Caps { round_trip: false, write_back: false, semantic: Semantic::Partial, ocr: false }
     }
 
-    fn detect(&self, source: &Source) -> bool {
-        matches!(source.hint, Some("docx" | "pptx" | "xlsx"))
+    fn extensions(&self) -> &'static [&'static str] {
+        &["docx", "pptx", "xlsx"]
     }
 
     fn skeleton(&self, source: &Source) -> Result<Tier0, Error> {
-        let id = content_id(source.bytes);
         let outline = office_shape(source.bytes)?;
-        let lossy = String::from_utf8_lossy(source.bytes);
-        Ok(Tier0 {
-            raw_tokens: count_tokens(&lossy),
-            normalised_tokens: count_tokens(&outline),
-            markdown: outline,
-            source_map: SourceMap {
-                spans: vec![Span { source: id, origin: 0..source.bytes.len() }],
-            },
-        })
-    }
-
-    fn view(&self, source: &Source, _select: &SpanSelector) -> Result<Tier1, Error> {
-        let id = content_id(source.bytes);
-        Ok(Tier1 {
-            markdown: office_shape(source.bytes)?,
-            source_map: SourceMap {
-                spans: vec![Span { source: id, origin: 0..source.bytes.len() }],
-            },
-        })
+        Ok(host_reference_core::Tier0::whole(source.bytes, outline))
     }
 }
 
